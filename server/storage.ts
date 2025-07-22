@@ -119,6 +119,38 @@ export class MemStorage implements IStorage {
       region: 'North India', 
       image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300'
     });
+
+    // Create some demo audits for testing
+    setTimeout(async () => {
+      await this.createAudit({
+        propertyId: 1,
+        auditorId: 2, // Sarah Johnson
+        reviewerId: 3  // Michael Chen
+      });
+
+      await this.createAudit({
+        propertyId: 2,
+        auditorId: 2,
+        reviewerId: 3
+      });
+
+      // Create audit items for the first audit
+      await this.createAuditItem({
+        auditId: 1,
+        category: 'Cleanliness',
+        item: 'Lobby cleanliness standards',
+        score: 4,
+        comments: 'Very good overall, minor improvements needed in corners'
+      });
+
+      await this.createAuditItem({
+        auditId: 1,
+        category: 'Branding',
+        item: 'Logo placement compliance',
+        score: 3,
+        comments: 'Some inconsistencies with brand guidelines'
+      });
+    }, 100);
   }
 
   // User methods
@@ -155,9 +187,10 @@ export class MemStorage implements IStorage {
     const property: Property = {
       ...insertProperty,
       id,
+      image: insertProperty.image || null,
       lastAuditScore: Math.floor(Math.random() * 40) + 60, // 60-100
       nextAuditDate: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000), // Within 90 days
-      status: ['green', 'amber', 'red'][Math.floor(Math.random() * 3)] as any,
+      status: ['green', 'amber', 'red'][Math.floor(Math.random() * 3)] as 'green' | 'amber' | 'red',
       createdAt: new Date()
     };
     this.properties.set(id, property);
@@ -190,6 +223,8 @@ export class MemStorage implements IStorage {
     const audit: Audit = {
       ...insertAudit,
       id,
+      auditorId: insertAudit.auditorId || null,
+      reviewerId: insertAudit.reviewerId || null,
       status: 'scheduled',
       overallScore: null,
       cleanlinessScore: null,
@@ -225,6 +260,9 @@ export class MemStorage implements IStorage {
     const item: AuditItem = {
       ...insertItem,
       id,
+      score: insertItem.score || null,
+      comments: insertItem.comments || null,
+      photos: insertItem.photos || null,
       status: 'pending'
     };
     this.auditItems.set(id, item);

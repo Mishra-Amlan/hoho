@@ -3,11 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Property } from '@shared/schema';
+import { Property, Audit } from '@shared/schema';
 
 export default function AdminDashboard() {
   const { data: properties, isLoading } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
+  });
+
+  const { data: audits } = useQuery<Audit[]>({
+    queryKey: ['/api/audits'],
   });
 
   if (isLoading) {
