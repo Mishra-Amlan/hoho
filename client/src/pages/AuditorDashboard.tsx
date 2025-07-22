@@ -47,14 +47,14 @@ export default function AuditorDashboard() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Assigned Audits</h1>
-          <p className="text-gray-600">Conduct audits, record observations, and upload evidence</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">My Assigned Audits</h1>
+          <p className="text-gray-700 text-lg">Conduct audits, record observations, and upload evidence</p>
         </div>
 
         {/* Current Audit Card */}
@@ -101,13 +101,13 @@ export default function AuditorDashboard() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  <Button className="w-full bg-green-500 hover:bg-green-600">
+                  <Button className="w-full btn-success" onClick={() => console.log('Continue checklist...')}>
                     <i className="fas fa-clipboard-check mr-2"></i>Continue Checklist
                   </Button>
-                  <Button className="w-full bg-blue-500 hover:bg-blue-600">
+                  <Button className="w-full btn-primary" onClick={() => console.log('Upload photos...')}>
                     <i className="fas fa-camera mr-2"></i>Upload Photos
                   </Button>
-                  <Button className="w-full bg-purple-500 hover:bg-purple-600">
+                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" onClick={() => console.log('Generate draft report...')}>
                     <i className="fas fa-microphone mr-2"></i>Record Voice Note
                   </Button>
                   <Button className="w-full bg-gray-500 hover:bg-gray-600">

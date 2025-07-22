@@ -88,44 +88,46 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <Card>
+        <Card className="card-modern shadow-xl">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-900">Login</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username" className="text-sm font-semibold text-gray-700">Username</Label>
                 <Input
                   id="username"
                   type="text"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="Enter your username"
+                  className="mt-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Enter your password"
+                  className="mt-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full btn-primary text-lg py-3" 
                 disabled={isLogging}
               >
                 {isLogging ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Signing In...
                   </>
                 ) : (
@@ -137,26 +139,26 @@ export default function LoginPage() {
         </Card>
 
         {/* Demo Credentials */}
-        <Card>
+        <Card className="card-modern shadow-xl">
           <CardHeader>
-            <CardTitle className="text-lg">Demo Credentials</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-900">Demo Credentials</CardTitle>
             <p className="text-sm text-gray-600">Click any role to auto-fill credentials</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {demoCredentials.map((cred, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between p-2 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  className="interactive-hover flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm transition-all duration-300 cursor-pointer"
                   onClick={() => handleDemoLogin(cred.username)}
                 >
                   <div>
-                    <span className="font-medium">{cred.role}</span>
-                    <div className="text-xs text-gray-500">
+                    <span className="font-semibold text-gray-900">{cred.role}</span>
+                    <div className="text-sm text-gray-600 font-mono">
                       {cred.username} / {cred.password}
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${cred.color}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${cred.color}`}>
                     Demo
                   </span>
                 </div>
