@@ -130,7 +130,7 @@ export default function AdminDashboard() {
                         />
                         <div>
                           <h3 className="font-semibold text-gray-900">{property.name}</h3>
-                          <p className="text-sm text-gray-600">Due: {property.nextAuditDate?.toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-600">Due: {property.nextAuditDate ? new Date(property.nextAuditDate).toLocaleDateString() : 'TBD'}</p>
                           <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                             property.status === 'red' 
                               ? 'bg-red-100 text-red-800'
