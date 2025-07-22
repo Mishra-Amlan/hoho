@@ -1,0 +1,103 @@
+# Hotel Audit Platform
+
+## Overview
+
+This is a comprehensive hotel brand audit automation platform that leverages AI technology to analyze diverse inputs such as photos, videos, and text-based checklists. The system supports multiple stakeholder personas including Admin (Vendor), Guest Auditor, Final Reviewer (QA), QA Corporate Team, and Hotel GM/Franchise Owner. The platform aims to automate hotel brand audits with 85%+ accuracy, handle up to 500 audits per day, and provide rapid actionable insights through detailed reporting.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React with TypeScript using Vite as the build tool
+- **UI Library**: Shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS with custom CSS variables for theming
+- **State Management**: TanStack React Query for server state, React Context for authentication
+- **Routing**: Wouter for lightweight client-side routing
+- **Form Handling**: React Hook Form with Zod validation
+
+### Backend Architecture
+- **Framework**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Database Provider**: Neon serverless PostgreSQL
+- **Session Management**: PostgreSQL session store (connect-pg-simple)
+- **API Design**: RESTful endpoints with structured error handling
+- **Build System**: ESBuild for production bundling
+
+## Key Components
+
+### Authentication System
+- Role-based authentication supporting 5 user personas
+- Protected routes with role-specific access control
+- Session persistence with localStorage fallback
+- Login/logout functionality with proper state management
+
+### Database Schema
+- **Users**: Role-based user system with credentials and metadata
+- **Properties**: Hotel properties with location, scores, and status tracking
+- **Audits**: Comprehensive audit records with scores, findings, and action plans
+- **Audit Items**: Granular audit checklist items with scoring and media attachments
+
+### Role-Based Dashboards
+- **Admin Dashboard**: Audit scheduling, auditor assignment, progress tracking
+- **Auditor Dashboard**: Field auditing interface, media upload, draft reports
+- **Reviewer Dashboard**: Report validation, score override capabilities, final submission
+- **Corporate Dashboard**: Analytics overview, compliance tracking, performance metrics
+- **Hotel GM Dashboard**: Property-specific results, action plans, compliance status
+
+### UI Component System
+- Consistent design system using Shadcn/ui components
+- Role-specific color coding and theming
+- Responsive design with mobile-first approach
+- Comprehensive component library (cards, forms, navigation, charts, etc.)
+
+## Data Flow
+
+1. **Authentication Flow**: User selects role → Login credentials → Role-based dashboard redirect
+2. **Audit Creation**: Admin creates audit → Assigns to auditor → Auditor receives task
+3. **Audit Execution**: Auditor completes checklist → Uploads media → Submits for review
+4. **Review Process**: Reviewer validates → AI analysis integration → Score finalization
+5. **Reporting**: Generate compliance reports → Action plan creation → Stakeholder distribution
+
+## External Dependencies
+
+### Core Dependencies
+- **React Ecosystem**: React, React DOM, React Hook Form, TanStack React Query
+- **UI Components**: Radix UI primitives, Lucide React icons, Tailwind CSS
+- **Backend**: Express.js, Drizzle ORM, Neon database
+- **Development**: Vite, TypeScript, ESLint, PostCSS
+- **Utilities**: Zod validation, date-fns, clsx for styling
+
+### Database Integration
+- Drizzle Kit for database migrations
+- PostgreSQL dialect with Neon serverless provider
+- Connection pooling and session management
+- Schema-first database design with TypeScript integration
+
+## Deployment Strategy
+
+### Development Environment
+- Vite development server with HMR
+- Replit integration with runtime error overlay
+- Development-specific middleware and logging
+- File serving and static asset handling
+
+### Production Build
+- Vite builds client-side React application to `dist/public`
+- ESBuild bundles server-side Express application to `dist`
+- Environment-specific configuration management
+- Static file serving from Express in production
+
+### Database Management
+- Environment-based DATABASE_URL configuration
+- Drizzle migrations in `./migrations` directory
+- PostgreSQL schema validation and type safety
+- Connection management with proper error handling
+
+### Scalability Considerations
+- Designed to handle 500+ audits per day
+- Stateless server architecture for horizontal scaling
+- Database connection pooling for performance
+- Asset optimization and caching strategies
