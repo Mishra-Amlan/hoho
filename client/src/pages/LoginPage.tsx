@@ -22,6 +22,8 @@ export default function LoginPage() {
       const success = await login(formData.username, formData.password);
       
       if (success) {
+        console.log('Login successful');
+        
         // Navigate to appropriate dashboard based on role
         const dashboardRoutes: Record<string, string> = {
           admin: '/admin',
@@ -35,7 +37,13 @@ export default function LoginPage() {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          setLocation(dashboardRoutes[user.role] || '/');
+          console.log('User logged in:', user);
+          console.log('Navigating to:', dashboardRoutes[user.role]);
+          
+          // Add a small delay to ensure state is updated
+          setTimeout(() => {
+            setLocation(dashboardRoutes[user.role] || '/');
+          }, 100);
         }
       } else {
         toast({

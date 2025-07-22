@@ -10,10 +10,13 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Don't redirect while still loading
+    if (isLoading) return;
+    
     if (!isAuthenticated) {
       setLocation('/');
       return;
@@ -23,9 +26,22 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       setLocation('/unauthorized');
       return;
     }
-  }, [isAuthenticated, user, allowedRoles, setLocation]);
+  }, [isAuthenticated, user, allowedRoles, setLocation, isLoading]);
 
-  if (!isAuthenticated || (allowedRoles && user && !allowedRoles.includes(user.role))) {
+  // Show loading state while auth is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return null;
   }
 

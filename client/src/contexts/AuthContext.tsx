@@ -7,12 +7,14 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   hasRole: (role: UserRole) => boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -49,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    setIsLoading(false);
   }, []);
 
   return (
@@ -57,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       isAuthenticated: !!user,
-      hasRole
+      hasRole,
+      isLoading
     }}>
       {children}
     </AuthContext.Provider>
