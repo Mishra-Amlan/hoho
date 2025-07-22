@@ -1,0 +1,173 @@
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'wouter';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+
+export default function LoginPage() {
+  const { login } = useAuth();
+  const [, setLocation] = useLocation();
+  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [isLogging, setIsLogging] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLogging(true);
+
+    try {
+      const success = await login(formData.username, formData.password);
+      
+      if (success) {
+        // Navigate to appropriate dashboard based on role
+        const dashboardRoutes: Record<string, string> = {
+          admin: '/admin',
+          auditor: '/auditor',
+          reviewer: '/reviewer',
+          corporate: '/corporate',
+          hotelgm: '/hotel-gm'
+        };
+        
+        // Get user info from localStorage to determine role
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setLocation(dashboardRoutes[user.role] || '/');
+        }
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid username or password. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLogging(false);
+    }
+  };
+
+  const demoCredentials = [
+    { role: 'Admin (Vendor)', username: 'admin', password: 'password', color: 'bg-orange-100 text-orange-800' },
+    { role: 'Guest Auditor', username: 'auditor', password: 'password', color: 'bg-green-100 text-green-800' },
+    { role: 'Final Reviewer', username: 'reviewer', password: 'password', color: 'bg-purple-100 text-purple-800' },
+    { role: 'QA Corporate', username: 'corporate', password: 'password', color: 'bg-amber-100 text-amber-800' },
+    { role: 'Hotel GM', username: 'hotelgm', password: 'password', color: 'bg-blue-100 text-blue-800' }
+  ];
+
+  const handleDemoLogin = (username: string) => {
+    setFormData({ username, password: 'password' });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <i className="fas fa-hotel text-4xl text-blue-600 mr-3"></i>
+            <h1 className="text-3xl font-bold text-gray-800">Hotel Audit Platform</h1>
+          </div>
+          <p className="text-gray-600">Sign in to access your dashboard</p>
+        </div>
+
+        {/* Login Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Login</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  placeholder="Enter your username"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLogging}
+              >
+                {isLogging ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Signing In...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Demo Credentials */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Demo Credentials</CardTitle>
+            <p className="text-sm text-gray-600">Click any role to auto-fill credentials</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {demoCredentials.map((cred, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between p-2 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleDemoLogin(cred.username)}
+                >
+                  <div>
+                    <span className="font-medium">{cred.role}</span>
+                    <div className="text-xs text-gray-500">
+                      {cred.username} / {cred.password}
+                    </div>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs ${cred.color}`}>
+                    Demo
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Role Selection Link */}
+        <div className="text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => setLocation('/roles')}
+            className="text-sm"
+          >
+            Or browse role descriptions
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

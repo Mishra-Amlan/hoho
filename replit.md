@@ -30,9 +30,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication System
 - Role-based authentication supporting 5 user personas
+- Traditional login page with username/password form
 - Protected routes with role-specific access control
 - Session persistence with localStorage fallback
 - Login/logout functionality with proper state management
+- Demo credentials for all personas (username/password: role/password)
 
 ### Database Schema
 - **Users**: Role-based user system with credentials and metadata

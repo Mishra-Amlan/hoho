@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import LoginPage from "@/pages/LoginPage";
 import RoleSelection from "@/pages/RoleSelection";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AuditorDashboard from "@/pages/AuditorDashboard";
@@ -16,7 +17,8 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={RoleSelection} />
+      <Route path="/" component={LoginPage} />
+      <Route path="/roles" component={RoleSelection} />
       
       <Route path="/admin">
         <ProtectedRoute allowedRoles={['admin']}>
