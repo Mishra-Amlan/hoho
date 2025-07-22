@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
-  const { login, error } = useAuth();
+  const { login } = useAuth();
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [isLogging, setIsLogging] = useState(false);
@@ -40,11 +40,6 @@ export default function LoginPage() {
           console.log('User logged in:', user);
           console.log('Navigating to:', dashboardRoutes[user.role]);
           
-          toast({
-            title: "Login Successful",
-            description: \`Welcome back, \${user.name}!\`,
-          });
-          
           // Add a small delay to ensure state is updated
           setTimeout(() => {
             setLocation(dashboardRoutes[user.role] || '/');
@@ -53,14 +48,14 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Login Failed",
-          description: error || "Invalid username or password. Please try again.",
+          description: "Invalid username or password. Please try again.",
           variant: "destructive"
         });
       }
     } catch (error) {
       toast({
         title: "Login Error",
-        description: "An error occurred during login. Please check your connection and try again.",
+        description: "An error occurred during login. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -68,17 +63,16 @@ export default function LoginPage() {
     }
   };
 
-  // Updated demo credentials to match Python backend setup
   const demoCredentials = [
-    { role: 'Admin (System)', username: 'admin', password: 'admin123', color: 'bg-orange-100 text-orange-800' },
-    { role: 'Auditor', username: 'sarah.johnson', password: 'auditor123', color: 'bg-green-100 text-green-800' },
-    { role: 'Reviewer', username: 'lisa.thompson', password: 'reviewer123', color: 'bg-purple-100 text-purple-800' },
-    { role: 'Corporate', username: 'raj.patel', password: 'corporate123', color: 'bg-amber-100 text-amber-800' },
-    { role: 'Hotel GM', username: 'priya.sharma', password: 'hotelgm123', color: 'bg-blue-100 text-blue-800' }
+    { role: 'Admin (Vendor)', username: 'admin', password: 'password', color: 'bg-orange-100 text-orange-800' },
+    { role: 'Guest Auditor', username: 'auditor', password: 'password', color: 'bg-green-100 text-green-800' },
+    { role: 'Final Reviewer', username: 'reviewer', password: 'password', color: 'bg-purple-100 text-purple-800' },
+    { role: 'QA Corporate', username: 'corporate', password: 'password', color: 'bg-amber-100 text-amber-800' },
+    { role: 'Hotel GM', username: 'hotelgm', password: 'password', color: 'bg-blue-100 text-blue-800' }
   ];
 
-  const handleDemoLogin = (username: string, password: string) => {
-    setFormData({ username, password });
+  const handleDemoLogin = (username: string) => {
+    setFormData({ username, password: 'password' });
   };
 
   return (
@@ -90,7 +84,7 @@ export default function LoginPage() {
             <i className="fas fa-hotel text-4xl text-blue-600 mr-3"></i>
             <h1 className="text-3xl font-bold text-gray-800">Hotel Audit Platform</h1>
           </div>
-          <p className="text-gray-600">AI-Powered Audit Management with Gemini</p>
+          <p className="text-gray-600">Sign in to access your dashboard</p>
         </div>
 
         {/* Login Form */}
@@ -126,12 +120,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {error && (
-                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-
               <Button 
                 type="submit" 
                 className="w-full btn-primary text-lg py-3" 
@@ -162,7 +150,7 @@ export default function LoginPage() {
                 <div 
                   key={index}
                   className="interactive-hover flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm transition-all duration-300 cursor-pointer"
-                  onClick={() => handleDemoLogin(cred.username, cred.password)}
+                  onClick={() => handleDemoLogin(cred.username)}
                 >
                   <div>
                     <span className="font-semibold text-gray-900">{cred.role}</span>
@@ -170,21 +158,11 @@ export default function LoginPage() {
                       {cred.username} / {cred.password}
                     </div>
                   </div>
-                  <span className={\`px-3 py-1 rounded-full text-xs font-semibold shadow-sm \${cred.color}\`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${cred.color}`}>
                     Demo
                   </span>
                 </div>
               ))}
-            </div>
-            
-            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center text-green-800">
-                <i className="fas fa-robot mr-2"></i>
-                <span className="font-semibold">AI Features Available</span>
-              </div>
-              <p className="text-sm text-green-700 mt-1">
-                Photo analysis, smart scoring, and automated reports powered by Google Gemini AI
-              </p>
             </div>
           </CardContent>
         </Card>

@@ -59,7 +59,7 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = \`\${this.baseURL}\${endpoint}\`;
+    const url = `${this.baseURL}${endpoint}`;
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ class ApiClient {
     };
 
     if (this.token) {
-      headers.Authorization = \`Bearer \${this.token}\`;
+      headers.Authorization = `Bearer ${this.token}`;
     }
 
     const config: RequestInit = {
@@ -79,7 +79,7 @@ class ApiClient {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        throw new Error(\`HTTP error! status: \${response.status}\`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -96,7 +96,7 @@ class ApiClient {
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
-    const response = await fetch(\`\${this.baseURL}/auth/login\`, {
+    const response = await fetch(`${this.baseURL}/auth/login`, {
       method: 'POST',
       body: formData,
     });
@@ -126,7 +126,7 @@ class ApiClient {
   }
 
   async getProperty(id: number): Promise<Property> {
-    return this.request<Property>(\`/properties/\${id}\`);
+    return this.request<Property>(`/properties/${id}`);
   }
 
   // Audits
@@ -145,12 +145,12 @@ class ApiClient {
       });
     }
     
-    const endpoint = \`/audits\${queryParams.toString() ? \`?\${queryParams.toString()}\` : ''}\`;
+    const endpoint = `/audits${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request<Audit[]>(endpoint);
   }
 
   async getAudit(id: number): Promise<Audit> {
-    return this.request<Audit>(\`/audits/\${id}\`);
+    return this.request<Audit>(`/audits/${id}`);
   }
 
   // AI Features
@@ -166,7 +166,7 @@ class ApiClient {
   }
 
   async generateReport(auditId: number) {
-    return this.request(\`/ai/generate-report\`, {
+    return this.request(`/ai/generate-report`, {
       method: 'POST',
       body: JSON.stringify({
         audit_id: auditId,
@@ -186,7 +186,7 @@ class ApiClient {
 
   // Health check
   async healthCheck(): Promise<{ message: string }> {
-    const response = await fetch(\`\${this.baseURL.replace('/api', '')}/\`);
+    const response = await fetch(`${this.baseURL.replace('/api', '')}/`);
     return response.json();
   }
 }
