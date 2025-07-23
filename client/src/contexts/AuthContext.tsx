@@ -25,14 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
 
-      // Login and get token
+      // Login and get user info
       const authResponse = await apiClient.login({ username, password });
       
-      // Get current user info
-      const currentUser = await apiClient.getCurrentUser();
-      
-      setUser(currentUser);
-      localStorage.setItem('user', JSON.stringify(currentUser));
+      setUser(authResponse.user);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
       return true;
     } catch (error) {
       console.error('Login failed:', error);
@@ -44,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    apiClient.logout();
     setUser(null);
     localStorage.removeItem('user');
     setError(null);
@@ -58,18 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         const storedUser = localStorage.getItem('user');
-        const storedToken = localStorage.getItem('authToken');
         
-        if (storedUser && storedToken) {
-          // Verify token is still valid by getting current user
+        if (storedUser) {
           try {
-            const currentUser = await apiClient.getCurrentUser();
-            setUser(currentUser);
+            const user = JSON.parse(storedUser);
+            setUser(user);
           } catch (error) {
-            // Token expired or invalid, clear storage
+            // Invalid stored user, clear storage
             localStorage.removeItem('user');
-            localStorage.removeItem('authToken');
-            console.log('Token expired, please login again');
+            console.log('Invalid stored user data, please login again');
           }
         }
       } catch (error) {

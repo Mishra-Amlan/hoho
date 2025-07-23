@@ -3,8 +3,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { seedDatabase } from "./seedDatabase";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database with demo data
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      await seedDatabase();
+    } catch (error) {
+      console.error("Failed to seed database:", error);
+    }
+  }
   // Authentication endpoints
   app.post("/api/auth/login", async (req, res) => {
     try {

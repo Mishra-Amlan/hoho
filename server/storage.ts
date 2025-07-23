@@ -5,6 +5,8 @@ import {
   type Audit, type InsertAudit,
   type AuditItem, type InsertAuditItem
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -279,4 +281,92 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // Property methods
+  async getAllProperties(): Promise<Property[]> {
+    return await db.select().from(properties);
+  }
+
+  async getProperty(id: number): Promise<Property | undefined> {
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property;
+  }
+
+  async createProperty(insertProperty: InsertProperty): Promise<Property> {
+    const [property] = await db.insert(properties).values(insertProperty).returning();
+    return property;
+  }
+
+  // Audit methods
+  async getAllAudits(): Promise<Audit[]> {
+    return await db.select().from(audits);
+  }
+
+  async getAuditsByAuditor(auditorId: number): Promise<Audit[]> {
+    return await db.select().from(audits).where(eq(audits.auditorId, auditorId));
+  }
+
+  async getAuditsByReviewer(reviewerId: number): Promise<Audit[]> {
+    return await db.select().from(audits).where(eq(audits.reviewerId, reviewerId));
+  }
+
+  async getAuditsByProperty(propertyId: number): Promise<Audit[]> {
+    return await db.select().from(audits).where(eq(audits.propertyId, propertyId));
+  }
+
+  async getAudit(id: number): Promise<Audit | undefined> {
+    const [audit] = await db.select().from(audits).where(eq(audits.id, id));
+    return audit;
+  }
+
+  async createAudit(insertAudit: InsertAudit): Promise<Audit> {
+    const [audit] = await db.insert(audits).values(insertAudit).returning();
+    return audit;
+  }
+
+  async updateAudit(id: number, updateData: Partial<Audit>): Promise<Audit | undefined> {
+    const [audit] = await db.update(audits)
+      .set(updateData)
+      .where(eq(audits.id, id))
+      .returning();
+    return audit;
+  }
+
+  // Audit item methods
+  async getAuditItems(auditId: number): Promise<AuditItem[]> {
+    return await db.select().from(auditItems).where(eq(auditItems.auditId, auditId));
+  }
+
+  async createAuditItem(insertItem: InsertAuditItem): Promise<AuditItem> {
+    const [item] = await db.insert(auditItems).values(insertItem).returning();
+    return item;
+  }
+
+  async updateAuditItem(id: number, updateData: Partial<AuditItem>): Promise<AuditItem | undefined> {
+    const [item] = await db.update(auditItems)
+      .set(updateData)
+      .where(eq(auditItems.id, id))
+      .returning();
+    return item;
+  }
+}
+
+// Always use database storage now that we have PostgreSQL setup
+export const storage = new DatabaseStorage();

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = '/api';
 
 export interface LoginCredentials {
   username: string;
@@ -91,14 +91,13 @@ class ApiClient {
   }
 
   // Authentication
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const formData = new FormData();
-    formData.append('username', credentials.username);
-    formData.append('password', credentials.password);
-
+  async login(credentials: LoginCredentials): Promise<{ user: User }> {
     const response = await fetch(`${this.baseURL}/auth/login`, {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
     });
 
     if (!response.ok) {
@@ -106,13 +105,17 @@ class ApiClient {
     }
 
     const data = await response.json();
-    this.token = data.access_token;
-    localStorage.setItem('authToken', this.token!);
+    // Store user info directly since we're not using JWT tokens
+    localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   }
 
   async getCurrentUser(): Promise<User> {
-    return this.request<User>('/auth/me');
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      throw new Error('No user logged in');
+    }
+    return JSON.parse(userStr);
   }
 
   logout(): void {
