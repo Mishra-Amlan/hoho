@@ -34,6 +34,88 @@ export interface IStorage {
   updateAuditItem(id: number, item: Partial<AuditItem>): Promise<AuditItem | undefined>;
 }
 
+// Database-based storage implementation
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const result = await db.insert(users).values(user).returning();
+    return result[0];
+  }
+
+  // Property methods
+  async getAllProperties(): Promise<Property[]> {
+    return db.select().from(properties);
+  }
+
+  async getProperty(id: number): Promise<Property | undefined> {
+    const result = await db.select().from(properties).where(eq(properties.id, id));
+    return result[0];
+  }
+
+  async createProperty(property: InsertProperty): Promise<Property> {
+    const result = await db.insert(properties).values(property).returning();
+    return result[0];
+  }
+
+  // Audit methods
+  async getAllAudits(): Promise<Audit[]> {
+    return db.select().from(audits);
+  }
+
+  async getAuditsByAuditor(auditorId: number): Promise<Audit[]> {
+    return db.select().from(audits).where(eq(audits.auditorId, auditorId));
+  }
+
+  async getAuditsByReviewer(reviewerId: number): Promise<Audit[]> {
+    return db.select().from(audits).where(eq(audits.reviewerId, reviewerId));
+  }
+
+  async getAuditsByProperty(propertyId: number): Promise<Audit[]> {
+    return db.select().from(audits).where(eq(audits.propertyId, propertyId));
+  }
+
+  async getAudit(id: number): Promise<Audit | undefined> {
+    const result = await db.select().from(audits).where(eq(audits.id, id));
+    return result[0];
+  }
+
+  async createAudit(audit: InsertAudit): Promise<Audit> {
+    const result = await db.insert(audits).values(audit).returning();
+    return result[0];
+  }
+
+  async updateAudit(id: number, audit: Partial<Audit>): Promise<Audit | undefined> {
+    const result = await db.update(audits).set(audit).where(eq(audits.id, id)).returning();
+    return result[0];
+  }
+
+  // Audit item methods
+  async getAuditItems(auditId: number): Promise<AuditItem[]> {
+    return db.select().from(auditItems).where(eq(auditItems.auditId, auditId));
+  }
+
+  async createAuditItem(item: InsertAuditItem): Promise<AuditItem> {
+    const result = await db.insert(auditItems).values(item).returning();
+    return result[0];
+  }
+
+  async updateAuditItem(id: number, item: Partial<AuditItem>): Promise<AuditItem | undefined> {
+    const result = await db.update(auditItems).set(item).where(eq(auditItems.id, id)).returning();
+    return result[0];
+  }
+}
+
+// Memory storage implementation for development testing
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private properties: Map<number, Property>;
@@ -109,8 +191,8 @@ export class MemStorage implements IStorage {
     });
 
     this.createProperty({
-      name: 'Taj Mahal, Mumbai', 
-      location: 'Mumbai',
+      name: 'Taj Mahal, Mumbai',
+      location: 'Mumbai', 
       region: 'West India',
       image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300'
     });
@@ -118,8 +200,8 @@ export class MemStorage implements IStorage {
     this.createProperty({
       name: 'Taj Lake Palace, Udaipur',
       location: 'Udaipur',
-      region: 'North India', 
-      image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300'
+      region: 'West India',
+      image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300'
     });
 
     // Create some demo audits for testing
@@ -281,92 +363,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Database Storage Implementation
-export class DatabaseStorage implements IStorage {
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
-  }
-
-  // Property methods
-  async getAllProperties(): Promise<Property[]> {
-    return await db.select().from(properties);
-  }
-
-  async getProperty(id: number): Promise<Property | undefined> {
-    const [property] = await db.select().from(properties).where(eq(properties.id, id));
-    return property;
-  }
-
-  async createProperty(insertProperty: InsertProperty): Promise<Property> {
-    const [property] = await db.insert(properties).values(insertProperty).returning();
-    return property;
-  }
-
-  // Audit methods
-  async getAllAudits(): Promise<Audit[]> {
-    return await db.select().from(audits);
-  }
-
-  async getAuditsByAuditor(auditorId: number): Promise<Audit[]> {
-    return await db.select().from(audits).where(eq(audits.auditorId, auditorId));
-  }
-
-  async getAuditsByReviewer(reviewerId: number): Promise<Audit[]> {
-    return await db.select().from(audits).where(eq(audits.reviewerId, reviewerId));
-  }
-
-  async getAuditsByProperty(propertyId: number): Promise<Audit[]> {
-    return await db.select().from(audits).where(eq(audits.propertyId, propertyId));
-  }
-
-  async getAudit(id: number): Promise<Audit | undefined> {
-    const [audit] = await db.select().from(audits).where(eq(audits.id, id));
-    return audit;
-  }
-
-  async createAudit(insertAudit: InsertAudit): Promise<Audit> {
-    const [audit] = await db.insert(audits).values(insertAudit).returning();
-    return audit;
-  }
-
-  async updateAudit(id: number, updateData: Partial<Audit>): Promise<Audit | undefined> {
-    const [audit] = await db.update(audits)
-      .set(updateData)
-      .where(eq(audits.id, id))
-      .returning();
-    return audit;
-  }
-
-  // Audit item methods
-  async getAuditItems(auditId: number): Promise<AuditItem[]> {
-    return await db.select().from(auditItems).where(eq(auditItems.auditId, auditId));
-  }
-
-  async createAuditItem(insertItem: InsertAuditItem): Promise<AuditItem> {
-    const [item] = await db.insert(auditItems).values(insertItem).returning();
-    return item;
-  }
-
-  async updateAuditItem(id: number, updateData: Partial<AuditItem>): Promise<AuditItem | undefined> {
-    const [item] = await db.update(auditItems)
-      .set(updateData)
-      .where(eq(auditItems.id, id))
-      .returning();
-    return item;
-  }
-}
-
-// Always use database storage now that we have PostgreSQL setup
-export const storage = new DatabaseStorage();
+// Use database storage for production, memory storage for development testing
+export const storage: IStorage = process.env.NODE_ENV === 'development' && process.env.USE_MEMORY_STORAGE === 'true' 
+  ? new MemStorage() 
+  : new DatabaseStorage();
