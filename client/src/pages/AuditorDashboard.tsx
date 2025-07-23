@@ -14,10 +14,34 @@ import { useAudits } from '@/hooks/use-api';
 
 export default function AuditorDashboard() {
   const { user } = useAuth();
-  const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
   const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
-  
+  const [checklistItems] = useState([
+    {
+      id: 1,
+      title: 'Logo Display Compliance',
+      description: 'Check if all Taj logos are properly displayed and meet brand guidelines',
+      category: 'branding',
+      score: null,
+      comments: '',
+      photos: []
+    },
+    {
+      id: 2, 
+      title: 'Staff Uniform Standards',
+      description: 'Verify staff uniforms meet brand standards and are well-maintained',
+      category: 'branding',
+      score: 4,
+      comments: 'All staff uniforms are clean and properly maintained. Name tags are clearly visible.',
+      photos: [
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
+        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
+        'https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200'
+      ]
+    }
+  ]);
+
+  const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
   const currentAudit = audits.find((audit: any) => audit.status === 'in_progress') || audits[0];
   
   if (isLoading) {
@@ -49,31 +73,6 @@ export default function AuditorDashboard() {
       </div>
     );
   }
-
-  const [checklistItems] = useState([
-    {
-      id: 1,
-      title: 'Logo Display Compliance',
-      description: 'Check if all Taj logos are properly displayed and meet brand guidelines',
-      category: 'branding',
-      score: null,
-      comments: '',
-      photos: []
-    },
-    {
-      id: 2, 
-      title: 'Staff Uniform Standards',
-      description: 'Verify staff uniforms meet brand standards and are well-maintained',
-      category: 'branding',
-      score: 4,
-      comments: 'All staff uniforms are clean and properly maintained. Name tags are clearly visible.',
-      photos: [
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
-        'https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200'
-      ]
-    }
-  ]);
 
   return (
     <div className="min-h-screen gradient-bg">

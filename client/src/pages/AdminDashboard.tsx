@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot } from 'lucide-react';
 import { useProperties, useAudits, useHealthCheck } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminDashboard() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -102,8 +104,18 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="properties">Properties</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="card-modern shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -214,8 +226,8 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Properties Table */}
-        <Card className="card-modern shadow-lg">
+            {/* Properties Table */}
+            <Card className="card-modern shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Properties</span>
@@ -247,9 +259,14 @@ export default function AdminDashboard() {
                           {property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="py-3">
-                          <Button size="sm" variant="outline">
-                            Manage
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button size="sm" variant="outline">
+                              View Details
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              Audit History
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -263,29 +280,129 @@ export default function AdminDashboard() {
               </div>
             )}
           </CardContent>
-        </Card>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsDashboard audits={audits || []} properties={properties || []} />
+          </TabsContent>
+
+          <TabsContent value="properties">
+            <Card>
+              <CardHeader>
+                <CardTitle>Property Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Property management features will be implemented here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <Card>
+              <CardHeader>
+                <CardTitle>Report Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Report generation and management features will be implemented here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Schedule Audit Modal */}
         <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Schedule New Audit</DialogTitle>
               <DialogDescription>
                 Create a new audit for a property with AI-powered features.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center text-blue-800">
-                  <Bot className="h-4 w-4 mr-2" />
-                  <span className="font-semibold">AI Features Available</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Property</label>
+                  <select className="w-full p-2 border rounded-lg">
+                    <option>Select a property...</option>
+                    {properties?.map((property: any) => (
+                      <option key={property.id} value={property.id}>{property.name}</option>
+                    ))}
+                  </select>
                 </div>
-                <p className="text-sm text-blue-700 mt-1">
-                  This audit will include photo analysis, automated scoring, and intelligent reporting powered by Google Gemini.
-                </p>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Auditor</label>
+                  <select className="w-full p-2 border rounded-lg">
+                    <option>Select an auditor...</option>
+                    <option value="auditor1">Sarah Johnson</option>
+                    <option value="auditor2">Michael Chen</option>
+                    <option value="auditor3">Emily Davis</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Audit Date</label>
+                  <input 
+                    type="date" 
+                    className="w-full p-2 border rounded-lg"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
               </div>
-              <Button onClick={() => setShowScheduleModal(false)} className="w-full">
-                Create Audit (Coming Soon)
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Audit Type</label>
+                  <select className="w-full p-2 border rounded-lg">
+                    <option>Standard Brand Audit</option>
+                    <option>Compliance Audit</option>
+                    <option>Mystery Guest Audit</option>
+                    <option>Follow-up Audit</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Priority</label>
+                  <select className="w-full p-2 border rounded-lg">
+                    <option>Normal</option>
+                    <option>High</option>
+                    <option>Urgent</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Special Instructions</label>
+                  <textarea 
+                    className="w-full p-2 border rounded-lg h-20"
+                    placeholder="Add any special instructions for the auditor..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <div className="flex items-center text-blue-800">
+                <Bot className="h-4 w-4 mr-2" />
+                <span className="font-semibold">AI Features Included</span>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                This audit includes photo analysis, automated scoring, and intelligent reporting powered by Google Gemini.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button variant="outline" onClick={() => setShowScheduleModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="btn-primary"
+                onClick={() => {
+                  // Handle scheduling logic here
+                  setShowScheduleModal(false);
+                }}
+              >
+                Schedule Audit
               </Button>
             </div>
           </DialogContent>
