@@ -79,6 +79,14 @@ export function useUpdateAuditItem() {
   });
 }
 
+export function useProperty(id: number) {
+  return useQuery({
+    queryKey: ["/api/properties", id],
+    queryFn: () => apiRequest(`/properties/${id}`),
+    enabled: !!id,
+  });
+}
+
 export function useHealthCheck() {
   return useQuery({
     queryKey: ["/api/health"],

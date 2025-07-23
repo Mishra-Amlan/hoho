@@ -1,56 +1,59 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, blob } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+// For SQL Server compatibility, we'll use a more compatible schema
+// Note: You can switch back to PostgreSQL by changing imports and table definitions
+
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ['admin', 'auditor', 'reviewer', 'corporate', 'hotelgm'] }).notNull(),
+  role: text("role").notNull(), // 'admin', 'auditor', 'reviewer', 'corporate', 'hotelgm'
   name: text("name").notNull(),
   email: text("email").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
-export const properties = pgTable("properties", {
-  id: serial("id").primaryKey(),
+export const properties = sqliteTable("properties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   location: text("location").notNull(),
   region: text("region").notNull(),
   image: text("image"),
   lastAuditScore: integer("last_audit_score"),
-  nextAuditDate: timestamp("next_audit_date"),
-  status: text("status", { enum: ['green', 'amber', 'red'] }).default('green'),
-  createdAt: timestamp("created_at").defaultNow(),
+  nextAuditDate: text("next_audit_date"), // Using text for timestamp compatibility
+  status: text("status").default('green'), // 'green', 'amber', 'red'
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
-export const audits = pgTable("audits", {
-  id: serial("id").primaryKey(),
-  propertyId: integer("property_id").references(() => properties.id).notNull(),
+export const audits = sqliteTable("audits", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  propertyId: integer("property_id").notNull().references(() => properties.id),
   auditorId: integer("auditor_id").references(() => users.id),
   reviewerId: integer("reviewer_id").references(() => users.id),
-  status: text("status", { enum: ['scheduled', 'in_progress', 'submitted', 'reviewed', 'completed'] }).default('scheduled'),
+  status: text("status").default('scheduled'), // 'scheduled', 'in_progress', 'submitted', 'reviewed', 'completed'
   overallScore: integer("overall_score"),
   cleanlinessScore: integer("cleanliness_score"),
   brandingScore: integer("branding_score"),
   operationalScore: integer("operational_score"),
-  complianceZone: text("compliance_zone", { enum: ['green', 'amber', 'red'] }),
-  findings: jsonb("findings"),
-  actionPlan: jsonb("action_plan"),
-  submittedAt: timestamp("submitted_at"),
-  reviewedAt: timestamp("reviewed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  complianceZone: text("compliance_zone"), // 'green', 'amber', 'red'
+  findings: text("findings"), // JSON as text
+  actionPlan: text("action_plan"), // JSON as text
+  submittedAt: text("submitted_at"), // Using text for timestamp compatibility
+  reviewedAt: text("reviewed_at"), // Using text for timestamp compatibility
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
-export const auditItems = pgTable("audit_items", {
-  id: serial("id").primaryKey(),
-  auditId: integer("audit_id").references(() => audits.id).notNull(),
+export const auditItems = sqliteTable("audit_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  auditId: integer("audit_id").notNull().references(() => audits.id),
   category: text("category").notNull(),
   item: text("item").notNull(),
   score: integer("score"),
   comments: text("comments"),
-  photos: jsonb("photos"),
-  status: text("status", { enum: ['pending', 'completed'] }).default('pending'),
+  photos: text("photos"), // JSON as text
+  status: text("status").default('pending'), // 'pending', 'completed'
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

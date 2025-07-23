@@ -3,16 +3,21 @@ import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot } from 'lucide-react';
-import { useProperties, useAudits, useHealthCheck } from '@/hooks/use-api';
+import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History } from 'lucide-react';
+import { useProperties, useAudits, useHealthCheck, useProperty } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminDashboard() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [showPropertyDetails, setShowPropertyDetails] = useState(false);
+  const [showAuditHistory, setShowAuditHistory] = useState(false);
   const { data: properties, isLoading: propertiesLoading, error: propertiesError } = useProperties();
   const { data: audits, isLoading: auditsLoading, error: auditsError } = useAudits();
+  const { data: selectedProperty } = useProperty(selectedPropertyId || 0);
+  const { data: propertyAudits } = useAudits(selectedPropertyId ? { propertyId: selectedPropertyId } : undefined);
   const { data: healthStatus } = useHealthCheck();
 
   if (propertiesLoading || auditsLoading) {
@@ -78,6 +83,16 @@ export default function AdminDashboard() {
 
   const handleScheduleAudit = () => {
     setShowScheduleModal(true);
+  };
+
+  const handleViewDetails = (propertyId: number) => {
+    setSelectedPropertyId(propertyId);
+    setShowPropertyDetails(true);
+  };
+
+  const handleAuditHistory = (propertyId: number) => {
+    setSelectedPropertyId(propertyId);
+    setShowAuditHistory(true);
   };
 
   return (
@@ -260,10 +275,22 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3">
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleViewDetails(property.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye className="h-3 w-3" />
                               View Details
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleAuditHistory(property.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <History className="h-3 w-3" />
                               Audit History
                             </Button>
                           </div>
