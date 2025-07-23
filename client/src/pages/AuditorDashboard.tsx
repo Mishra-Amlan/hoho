@@ -59,10 +59,7 @@ export default function AuditorDashboard() {
     try {
       await updateAudit.mutateAsync({
         id: currentAudit.id,
-        status: 'draft',
-        notes: draftNotes,
-        attachments: attachedFiles,
-        voiceNotes: voiceNotes
+        status: 'in_progress'
       });
       
       toast({
@@ -70,6 +67,7 @@ export default function AuditorDashboard() {
         description: "Your audit progress has been saved successfully.",
       });
     } catch (error) {
+      console.error('Save error:', error);
       toast({
         title: "Save Failed",
         description: "Unable to save draft. Please try again.",
@@ -85,9 +83,6 @@ export default function AuditorDashboard() {
       await updateAudit.mutateAsync({
         id: currentAudit.id,
         status: 'submitted',
-        notes: draftNotes,
-        attachments: attachedFiles,
-        voiceNotes: voiceNotes,
         submittedAt: new Date().toISOString()
       });
       
@@ -96,6 +91,7 @@ export default function AuditorDashboard() {
         description: "Your audit has been submitted for review successfully.",
       });
     } catch (error) {
+      console.error('Submission error:', error);
       toast({
         title: "Submission Failed",
         description: "Unable to submit audit. Please try again.",

@@ -93,15 +93,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
+      
+      console.log('Updating audit:', id, 'with data:', updateData);
+      
       const audit = await storage.updateAudit(id, updateData);
       
       if (!audit) {
         return res.status(404).json({ message: "Audit not found" });
       }
       
+      console.log('Updated audit:', audit);
       res.json(audit);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update audit" });
+      console.error('Update audit error:', error);
+      res.status(500).json({ message: "Failed to update audit", error: error.message });
     }
   });
 
