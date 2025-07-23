@@ -10,12 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Audit, AuditItem } from '@shared/schema';
 import { AuditChecklistModal } from '@/components/AuditChecklistModal';
 import { PhotoUploadModal } from '@/components/PhotoUploadModal';
-import { useAudits } from '@/hooks/use-api';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { DragDropUpload } from '@/components/DragDropUpload';
+import { useAudits, useUpdateAudit } from '@/hooks/use-api';
+import { useToast } from '@/hooks/use-toast';
+import { Save, Send, FileText, Camera, Mic } from 'lucide-react';
 
 export default function AuditorDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [draftNotes, setDraftNotes] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
+  const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
   const [checklistItems] = useState([
     {
       id: 1,
@@ -42,7 +50,73 @@ export default function AuditorDashboard() {
   ]);
 
   const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
+  const updateAudit = useUpdateAudit();
   const currentAudit = audits.find((audit: any) => audit.status === 'in_progress') || audits[0];
+
+  const handleSaveDraft = async () => {
+    if (!currentAudit) return;
+    
+    try {
+      await updateAudit.mutateAsync({
+        id: currentAudit.id,
+        status: 'draft',
+        notes: draftNotes,
+        attachments: attachedFiles,
+        voiceNotes: voiceNotes
+      });
+      
+      toast({
+        title: "Draft Saved",
+        description: "Your audit progress has been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Unable to save draft. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!currentAudit) return;
+    
+    try {
+      await updateAudit.mutateAsync({
+        id: currentAudit.id,
+        status: 'submitted',
+        notes: draftNotes,
+        attachments: attachedFiles,
+        voiceNotes: voiceNotes,
+        submittedAt: new Date().toISOString()
+      });
+      
+      toast({
+        title: "Submitted for Review",
+        description: "Your audit has been submitted for review successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "Unable to submit audit. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleVoiceRecording = (audioBlob: Blob, transcription?: string) => {
+    const newVoiceNote = {
+      id: Date.now().toString(),
+      audioBlob,
+      transcription,
+      timestamp: new Date().toISOString()
+    };
+    setVoiceNotes(prev => [...prev, newVoiceNote]);
+  };
+
+  const handleFilesChange = (files: any[]) => {
+    setAttachedFiles(files);
+  };
   
   if (isLoading) {
     return (
@@ -145,19 +219,27 @@ export default function AuditorDashboard() {
                     className="w-full btn-success" 
                     onClick={() => setShowChecklistModal(true)}
                   >
-                    <i className="fas fa-clipboard-check mr-2"></i>Continue Checklist
+                    <FileText className="h-4 w-4 mr-2" />Continue Checklist
                   </Button>
                   <Button 
                     className="w-full btn-primary" 
                     onClick={() => setShowPhotoModal(true)}
                   >
-                    <i className="fas fa-camera mr-2"></i>Upload Photos
+                    <Camera className="h-4 w-4 mr-2" />Upload Photos
                   </Button>
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" onClick={() => console.log('Generate draft report...')}>
-                    <i className="fas fa-microphone mr-2"></i>Record Voice Note
+                  <Button 
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" 
+                    onClick={handleSaveDraft}
+                  >
+                    <Mic className="h-4 w-4 mr-2" />Record Voice Note
                   </Button>
-                  <Button className="w-full bg-gray-500 hover:bg-gray-600">
-                    <i className="fas fa-save mr-2"></i>Save Draft
+                  <Button 
+                    className="w-full bg-gray-500 hover:bg-gray-600"
+                    onClick={handleSaveDraft}
+                    disabled={updateAudit.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
                   </Button>
                 </div>
               </div>
@@ -165,81 +247,163 @@ export default function AuditorDashboard() {
           </CardContent>
         </Card>
 
-        {/* Audit Checklist */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Branding Compliance Checklist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {checklistItems.map((item) => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                      <p className="text-sm text-gray-600">{item.description}</p>
-                    </div>
-                    <Select defaultValue={item.score?.toString()}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Select Score" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">Excellent (5)</SelectItem>
-                        <SelectItem value="4">Good (4)</SelectItem>
-                        <SelectItem value="3">Average (3)</SelectItem>
-                        <SelectItem value="2">Poor (2)</SelectItem>
-                        <SelectItem value="1">Critical (1)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Photo Upload/Display Area */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Photos</label>
-                    {item.photos.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2 mb-4">
-                        {item.photos.map((photo, index) => (
-                          <img
-                            key={index} 
-                            src={photo}
-                            alt={`Evidence ${index + 1}`}
-                            className="rounded-lg object-cover h-32 w-full"
+        {/* Enhanced Audit Work Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Audit Checklist */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Branding Compliance Checklist</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {checklistItems.map((item) => (
+                    <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                          <p className="text-sm text-gray-600">{item.description}</p>
+                        </div>
+                        <Select defaultValue={item.score?.toString()}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Select Score" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">Excellent (5)</SelectItem>
+                            <SelectItem value="4">Good (4)</SelectItem>
+                            <SelectItem value="3">Average (3)</SelectItem>
+                            <SelectItem value="2">Poor (2)</SelectItem>
+                            <SelectItem value="1">Critical (1)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Enhanced Photo Upload with Drag & Drop */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Photos</label>
+                        {item.photos.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2 mb-4">
+                            {item.photos.map((photo, index) => (
+                              <img
+                                key={index} 
+                                src={photo}
+                                alt={`Evidence ${index + 1}`}
+                                className="rounded-lg object-cover h-32 w-full"
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <DragDropUpload
+                            onFilesChange={handleFilesChange}
+                            acceptedTypes={['image/*']}
+                            maxFiles={5}
+                            maxSizeInMB={10}
+                            className="mb-2"
                           />
-                        ))}
+                        )}
                       </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 cursor-pointer">
-                        <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                        <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Comments */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Comments</label>
+                      {/* Comments */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Comments</label>
+                        <Textarea 
+                          rows={3} 
+                          defaultValue={item.comments}
+                          placeholder="Add your observations and comments..."
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Additional Notes Section */}
+                  <div className="border-t pt-6">
+                    <h3 className="font-medium mb-3">Additional Audit Notes</h3>
                     <Textarea 
-                      rows={3} 
-                      defaultValue={item.comments}
-                      placeholder="Add your observations and comments..."
+                      value={draftNotes}
+                      onChange={(e) => setDraftNotes(e.target.value)}
+                      placeholder="Add any additional observations, recommendations, or overall assessment notes..."
+                      className="min-h-24"
                     />
                   </div>
-                </div>
-              ))}
 
-              {/* Submit Actions */}
-              <div className="flex space-x-4 pt-6">
-                <Button variant="outline" className="flex-1">
-                  <i className="fas fa-save mr-2"></i>Save Draft
+                  {/* Enhanced Submit Actions */}
+                  <div className="flex space-x-4 pt-6">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={handleSaveDraft}
+                      disabled={updateAudit.isPending}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-green-500 hover:bg-green-600"
+                      onClick={handleSubmitForReview}
+                      disabled={updateAudit.isPending}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar Tools */}
+          <div className="space-y-6">
+            {/* Voice Recorder */}
+            <VoiceRecorder 
+              onRecordingComplete={handleVoiceRecording}
+              className="w-full"
+            />
+
+            {/* File Upload Center */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Camera className="h-5 w-5 mr-2" />
+                  Media Upload
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DragDropUpload
+                  onFilesChange={handleFilesChange}
+                  acceptedTypes={['image/*', 'video/*', '.pdf']}
+                  maxFiles={10}
+                  maxSizeInMB={50}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => setShowChecklistModal(true)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Continue Checklist
                 </Button>
-                <Button className="flex-1 bg-green-500 hover:bg-green-600">
-                  <i className="fas fa-paper-plane mr-2"></i>Submit for Review
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => setShowPhotoModal(true)}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Upload Photos
                 </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Modals */}
         <AuditChecklistModal
