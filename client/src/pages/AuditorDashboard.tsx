@@ -8,18 +8,47 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Audit, AuditItem } from '@shared/schema';
+import { AuditChecklistModal } from '@/components/AuditChecklistModal';
+import { PhotoUploadModal } from '@/components/PhotoUploadModal';
+import { useAudits } from '@/hooks/use-api';
 
 export default function AuditorDashboard() {
-  const [currentAudit] = useState({
-    id: 1,
-    property: 'Taj Palace, New Delhi',
-    status: 'in_progress',
-    progress: {
-      cleanliness: 100,
-      branding: 60, 
-      operational: 0
-    }
-  });
+  const { user } = useAuth();
+  const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  
+  const currentAudit = audits.find((audit: any) => audit.status === 'in_progress') || audits[0];
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen gradient-bg">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentAudit) {
+    return (
+      <div className="min-h-screen gradient-bg">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Assigned Audits</h2>
+              <p className="text-gray-600">You don't have any audits assigned to you at the moment.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const [checklistItems] = useState([
     {
@@ -61,8 +90,14 @@ export default function AuditorDashboard() {
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Current Audit: {currentAudit.property}</CardTitle>
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">In Progress</span>
+              <CardTitle>Current Audit: Property ID {currentAudit.propertyId}</CardTitle>
+              <span className={`px-3 py-1 text-sm rounded-full ${
+                currentAudit.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : 
+                currentAudit.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {currentAudit.status.charAt(0).toUpperCase() + currentAudit.status.slice(1).replace('_', ' ')}
+              </span>
             </div>
           </CardHeader>
           <CardContent>
@@ -74,25 +109,31 @@ export default function AuditorDashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600">Cleanliness & Hygiene</span>
-                      <span className="text-sm font-semibold text-green-600">Completed</span>
+                      <span className="text-sm font-semibold text-green-600">
+                        {currentAudit.cleanlinessScore ? `${currentAudit.cleanlinessScore}/5` : 'Pending'}
+                      </span>
                     </div>
-                    <Progress value={100} className="h-2" />
+                    <Progress value={currentAudit.cleanlinessScore ? (currentAudit.cleanlinessScore / 5) * 100 : 0} className="h-2" />
                   </div>
                   
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600">Branding Compliance</span>
-                      <span className="text-sm font-semibold text-yellow-600">In Progress (60%)</span>
+                      <span className="text-sm font-semibold text-yellow-600">
+                        {currentAudit.brandingScore ? `${currentAudit.brandingScore}/5` : 'Pending'}
+                      </span>
                     </div>
-                    <Progress value={60} className="h-2" />
+                    <Progress value={currentAudit.brandingScore ? (currentAudit.brandingScore / 5) * 100 : 0} className="h-2" />
                   </div>
                   
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600">Operational Efficiency</span>
-                      <span className="text-sm font-semibold text-gray-400">Pending</span>
+                      <span className="text-sm font-semibold text-gray-400">
+                        {currentAudit.operationalScore ? `${currentAudit.operationalScore}/5` : 'Pending'}
+                      </span>
                     </div>
-                    <Progress value={0} className="h-2" />
+                    <Progress value={currentAudit.operationalScore ? (currentAudit.operationalScore / 5) * 100 : 0} className="h-2" />
                   </div>
                 </div>
               </div>
@@ -101,10 +142,16 @@ export default function AuditorDashboard() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  <Button className="w-full btn-success" onClick={() => console.log('Continue checklist...')}>
+                  <Button 
+                    className="w-full btn-success" 
+                    onClick={() => setShowChecklistModal(true)}
+                  >
                     <i className="fas fa-clipboard-check mr-2"></i>Continue Checklist
                   </Button>
-                  <Button className="w-full btn-primary" onClick={() => console.log('Upload photos...')}>
+                  <Button 
+                    className="w-full btn-primary" 
+                    onClick={() => setShowPhotoModal(true)}
+                  >
                     <i className="fas fa-camera mr-2"></i>Upload Photos
                   </Button>
                   <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" onClick={() => console.log('Generate draft report...')}>
@@ -194,6 +241,21 @@ export default function AuditorDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Modals */}
+        <AuditChecklistModal
+          isOpen={showChecklistModal}
+          onOpenChange={setShowChecklistModal}
+          auditId={currentAudit.id}
+          propertyName={`Property ${currentAudit.propertyId}`}
+        />
+
+        <PhotoUploadModal
+          isOpen={showPhotoModal}
+          onOpenChange={setShowPhotoModal}
+          auditId={currentAudit.id}
+          propertyName={`Property ${currentAudit.propertyId}`}
+        />
       </div>
     </div>
   );

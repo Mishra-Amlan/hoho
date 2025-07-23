@@ -1,83 +1,111 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, User, Property, Audit } from '@/utils/api';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Property, Audit, AuditItem } from "@shared/schema";
 
-// Properties hooks
 export function useProperties() {
   return useQuery({
-    queryKey: ['properties'],
-    queryFn: () => apiClient.getProperties(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: ["/api/properties"],
+    queryFn: () => apiRequest("/properties"),
   });
 }
 
-export function useProperty(id: number) {
-  return useQuery({
-    queryKey: ['properties', id],
-    queryFn: () => apiClient.getProperty(id),
-    enabled: !!id,
-  });
-}
-
-// Audits hooks
-export function useAudits(params?: {
-  auditor_id?: number;
-  reviewer_id?: number;
-  property_id?: number;
-  status?: string;
-}) {
-  return useQuery({
-    queryKey: ['audits', params],
-    queryFn: () => apiClient.getAudits(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-export function useAudit(id: number) {
-  return useQuery({
-    queryKey: ['audits', id],
-    queryFn: () => apiClient.getAudit(id),
-    enabled: !!id,
-  });
-}
-
-// AI features hooks
-export function usePhotoAnalysis() {
-  const queryClient = useQueryClient();
+export function useAudits(params?: { auditorId?: number; reviewerId?: number; propertyId?: number }) {
+  const queryParams = new URLSearchParams();
+  if (params?.auditorId) queryParams.append('auditorId', params.auditorId.toString());
+  if (params?.reviewerId) queryParams.append('reviewerId', params.reviewerId.toString());
+  if (params?.propertyId) queryParams.append('propertyId', params.propertyId.toString());
   
+  const endpoint = `/audits${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  return useQuery({
+    queryKey: ["/api/audits", params],
+    queryFn: () => apiRequest(endpoint),
+  });
+}
+
+export function useAuditItems(auditId: number) {
+  return useQuery({
+    queryKey: ["/api/audits", auditId, "items"],
+    queryFn: () => apiRequest(`/audits/${auditId}/items`),
+    enabled: !!auditId,
+  });
+}
+
+export function useCreateAudit() {
   return useMutation({
-    mutationFn: ({ imageBase64, context, auditItemId }: {
-      imageBase64: string;
-      context: string;
-      auditItemId?: number;
-    }) => apiClient.analyzePhoto(imageBase64, context, auditItemId),
+    mutationFn: (audit: any) => apiRequest("/audits", {
+      method: "POST",
+      body: JSON.stringify(audit),
+    }),
     onSuccess: () => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['audits'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/audits"] });
     },
   });
 }
 
+export function useUpdateAudit() {
+  return useMutation({
+    mutationFn: ({ id, ...audit }: any) => apiRequest(`/audits/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(audit),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/audits"] });
+    },
+  });
+}
+
+export function useCreateAuditItem() {
+  return useMutation({
+    mutationFn: ({ auditId, ...item }: any) => apiRequest(`/audits/${auditId}/items`, {
+      method: "POST",
+      body: JSON.stringify(item),
+    }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/audits", variables.auditId, "items"] });
+    },
+  });
+}
+
+export function useUpdateAuditItem() {
+  return useMutation({
+    mutationFn: ({ id, ...item }: any) => apiRequest(`/audit-items/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(item),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/audits"] });
+    },
+  });
+}
+
+export function useHealthCheck() {
+  return useQuery({
+    queryKey: ["/api/health"],
+    queryFn: () => apiRequest("/health").catch(() => ({ status: "disconnected" })),
+    refetchInterval: 30000, // Check every 30 seconds
+    retry: false,
+  });
+}
+
+// Add the missing exports that AIDemoPage needs
 export function useReportGeneration() {
   return useMutation({
-    mutationFn: (auditId: number) => apiClient.generateReport(auditId),
+    mutationFn: (data: any) => apiRequest("/ai/generate-report", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/audits"] });
+    },
   });
 }
 
 export function useScoreSuggestion() {
   return useMutation({
-    mutationFn: ({ auditItemId, observations }: {
-      auditItemId: number;
-      observations: string;
-    }) => apiClient.suggestScore(auditItemId, observations),
-  });
-}
-
-// Health check hook
-export function useHealthCheck() {
-  return useQuery({
-    queryKey: ['health'],
-    queryFn: () => apiClient.healthCheck(),
-    refetchInterval: 30000, // Check every 30 seconds
-    staleTime: 60000, // 1 minute
+    mutationFn: (data: any) => apiRequest("/ai/score-suggestion", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   });
 }

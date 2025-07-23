@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient, User } from '@/utils/api';
+import { apiClient } from '@/lib/api';
+import type { User } from '@shared/schema';
 
 export type UserRole = 'admin' | 'auditor' | 'reviewer' | 'corporate' | 'hotelgm';
 

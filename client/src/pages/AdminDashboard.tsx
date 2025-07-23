@@ -64,14 +64,14 @@ export default function AdminDashboard() {
 
   const totalProperties = properties?.length || 0;
   const totalAudits = audits?.length || 0;
-  const pendingAudits = audits?.filter(audit => audit.status === 'scheduled' || audit.status === 'in_progress').length || 0;
-  const completedAudits = audits?.filter(audit => audit.status === 'completed').length || 0;
+  const pendingAudits = audits?.filter((audit: any) => audit.status === 'scheduled' || audit.status === 'in_progress').length || 0;
+  const completedAudits = audits?.filter((audit: any) => audit.status === 'completed').length || 0;
 
   // Calculate compliance distribution
   const complianceStats = {
-    green: audits?.filter(audit => audit.compliance_zone === 'green').length || 0,
-    amber: audits?.filter(audit => audit.compliance_zone === 'amber').length || 0,
-    red: audits?.filter(audit => audit.compliance_zone === 'red').length || 0,
+    green: audits?.filter((audit: any) => audit.complianceZone === 'green').length || 0,
+    amber: audits?.filter((audit: any) => audit.complianceZone === 'amber').length || 0,
+    red: audits?.filter((audit: any) => audit.complianceZone === 'red').length || 0,
   };
 
   const handleScheduleAudit = () => {
@@ -238,13 +238,13 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {properties.map((property) => (
+                    {properties.map((property: any) => (
                       <tr key={property.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 font-medium">{property.name}</td>
                         <td className="py-3 text-gray-600">{property.location}</td>
-                        <td className="py-3 text-gray-600">{property.property_type}</td>
+                        <td className="py-3 text-gray-600">{property.region || 'Hotel'}</td>
                         <td className="py-3 text-gray-600">
-                          {new Date(property.created_at).toLocaleDateString()}
+                          {property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="py-3">
                           <Button size="sm" variant="outline">
