@@ -3,7 +3,7 @@ import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Robot } from 'lucide-react';
+import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot } from 'lucide-react';
 import { useProperties, useAudits, useHealthCheck } from '@/hooks/use-api';
 import { Badge } from '@/components/ui/badge';
 
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
                 <span className="text-sm text-gray-600">Backend Connected</span>
               </div>
               <Badge variant="outline" className="text-xs">
-                <Robot className="w-3 h-3 mr-1" />
+                <Bot className="w-3 h-3 mr-1" />
                 Gemini AI Ready
               </Badge>
             </div>
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
           <Card className="card-modern shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Robot className="h-5 w-5 mr-2" />
+                <Bot className="h-5 w-5 mr-2" />
                 AI Features
               </CardTitle>
             </CardHeader>
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center text-blue-800">
-                  <Robot className="h-4 w-4 mr-2" />
+                  <Bot className="h-4 w-4 mr-2" />
                   <span className="font-semibold">AI Features Available</span>
                 </div>
                 <p className="text-sm text-blue-700 mt-1">

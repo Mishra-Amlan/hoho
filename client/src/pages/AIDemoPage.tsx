@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Robot, Camera, FileText, TrendingUp, Loader2 } from 'lucide-react';
+import { Bot , Camera, FileText, TrendingUp, Loader2 } from 'lucide-react';
 import { useScoreSuggestion, useReportGeneration } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,7 +56,7 @@ export default function AIDemoPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
-            <Robot className="h-12 w-12 text-blue-600 mr-3" />
+            <Bot className="h-12 w-12 text-blue-600 mr-3" />
             <h1 className="text-4xl font-bold text-gray-900">AI Demo Center</h1>
           </div>
           <p className="text-lg text-gray-600">
@@ -101,7 +101,7 @@ export default function AIDemoPage() {
                   </>
                 ) : (
                   <>
-                    <Robot className="h-4 w-4 mr-2" />
+                    <Bot className="h-4 w-4 mr-2" />
                     Get AI Score Suggestion
                   </>
                 )}
@@ -160,7 +160,7 @@ export default function AIDemoPage() {
                   </>
                 ) : (
                   <>
-                    <Robot className="h-4 w-4 mr-2" />
+                    <Bot className="h-4 w-4 mr-2" />
                     Generate AI Report
                   </>
                 )}
@@ -222,7 +222,7 @@ export default function AIDemoPage() {
           <Card className="card-modern shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Robot className="h-5 w-5 mr-2 text-indigo-600" />
+                <Bot className="h-5 w-5 mr-2 text-indigo-600" />
                 System Integration
               </CardTitle>
             </CardHeader>

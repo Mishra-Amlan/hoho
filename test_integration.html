@@ -334,7 +334,7 @@
         function updateStatus(elementId, message, type = 'info') {
             const element = document.getElementById(elementId);
             const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : '🔍';
-            element.innerHTML += \`<div class="status \${type}"><span>\${icon}</span><span>\${message}</span></div>\`;
+            element.innerHTML += `<div class="status ${type}"><span>${icon}</span><span>${message}</span></div>`;
         }
 
         async function runFullSystemTest() {
@@ -355,17 +355,17 @@
         async function testBackendHealth() {
             updateStatus('systemStatus', 'Testing Python FastAPI backend...', 'info');
             try {
-                const response = await fetch(\`\${API_BASE}/\`);
+                const response = await fetch(`${API_BASE}/`);
                 const data = await response.json();
-                updateStatus('systemStatus', \`✅ Backend healthy: \${data.message}\`, 'success');
+                updateStatus('systemStatus', `✅ Backend healthy: ${data.message}`, 'success');
                 
                 // Test API docs
-                const docsResponse = await fetch(\`\${API_BASE}/docs\`);
+                const docsResponse = await fetch(`${API_BASE}/docs`);
                 if (docsResponse.ok) {
                     updateStatus('systemStatus', '✅ API documentation accessible', 'success');
                 }
             } catch (error) {
-                updateStatus('systemStatus', \`❌ Backend connection failed: \${error.message}\`, 'error');
+                updateStatus('systemStatus', `❌ Backend connection failed: ${error.message}`, 'error');
             }
         }
 
@@ -376,10 +376,10 @@
                 if (response.ok) {
                     updateStatus('systemStatus', '✅ React frontend accessible on :5173', 'success');
                 } else {
-                    updateStatus('systemStatus', \`⚠️ Frontend status: \${response.status}\`, 'warning');
+                    updateStatus('systemStatus', `⚠️ Frontend status: ${response.status}`, 'warning');
                 }
             } catch (error) {
-                updateStatus('systemStatus', \`❌ Frontend connection failed: \${error.message}\`, 'error');
+                updateStatus('systemStatus', `❌ Frontend connection failed: ${error.message}`, 'error');
             }
         }
 
@@ -387,14 +387,14 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            updateStatus('authStatus', \`🔍 Testing login for: \${username}\`, 'info');
+            updateStatus('authStatus', `🔍 Testing login for: ${username}`, 'info');
             
             try {
                 const formData = new FormData();
                 formData.append('username', username);
                 formData.append('password', password);
 
-                const response = await fetch(\`\${API_BASE}/api/auth/login\`, {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     body: formData
                 });
@@ -405,20 +405,20 @@
                     updateStatus('authStatus', '✅ Login successful! JWT token received.', 'success');
                     
                     // Test getting current user
-                    const userResponse = await fetch(\`\${API_BASE}/api/auth/me\`, {
-                        headers: { 'Authorization': \`Bearer \${authToken}\` }
+                    const userResponse = await fetch(`${API_BASE}/api/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     
                     if (userResponse.ok) {
                         const user = await userResponse.json();
-                        updateStatus('authStatus', \`✅ User authenticated: \${user.name} (\${user.role})\`, 'success');
+                        updateStatus('authStatus', `✅ User authenticated: ${user.name} (${user.role})`, 'success');
                     }
                 } else {
                     const errorData = await response.text();
-                    updateStatus('authStatus', \`❌ Login failed: \${errorData}\`, 'error');
+                    updateStatus('authStatus', `❌ Login failed: ${errorData}`, 'error');
                 }
             } catch (error) {
-                updateStatus('authStatus', \`❌ Login request failed: \${error.message}\`, 'error');
+                updateStatus('authStatus', `❌ Login request failed: ${error.message}`, 'error');
             }
         }
 
@@ -431,21 +431,21 @@
             }
 
             try {
-                const response = await fetch(\`\${API_BASE}/api/properties\`, {
-                    headers: { 'Authorization': \`Bearer \${authToken}\` }
+                const response = await fetch(`${API_BASE}/api/properties`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 if (response.ok) {
                     const properties = await response.json();
-                    updateStatus('dataStatus', \`✅ Properties API working: \${properties.length} properties loaded\`, 'success');
+                    updateStatus('dataStatus', `✅ Properties API working: ${properties.length} properties loaded`, 'success');
                     if (properties.length > 0) {
-                        updateStatus('dataStatus', \`📋 Sample: "\${properties[0].name}" in \${properties[0].location}\`, 'info');
+                        updateStatus('dataStatus', `📋 Sample: "${properties[0].name}" in ${properties[0].location}`, 'info');
                     }
                 } else {
-                    updateStatus('dataStatus', \`❌ Properties API failed: HTTP \${response.status}\`, 'error');
+                    updateStatus('dataStatus', `❌ Properties API failed: HTTP ${response.status}`, 'error');
                 }
             } catch (error) {
-                updateStatus('dataStatus', \`❌ Properties API error: \${error.message}\`, 'error');
+                updateStatus('dataStatus', `❌ Properties API error: ${error.message}`, 'error');
             }
         }
 
@@ -458,21 +458,21 @@
             }
 
             try {
-                const response = await fetch(\`\${API_BASE}/api/audits\`, {
-                    headers: { 'Authorization': \`Bearer \${authToken}\` }
+                const response = await fetch(`${API_BASE}/api/audits`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 if (response.ok) {
                     const audits = await response.json();
-                    updateStatus('dataStatus', \`✅ Audits API working: \${audits.length} audits found\`, 'success');
+                    updateStatus('dataStatus', `✅ Audits API working: ${audits.length} audits found`, 'success');
                     if (audits.length > 0) {
-                        updateStatus('dataStatus', \`📋 Sample audit: Type "\${audits[0].audit_type}", Status: \${audits[0].status}\`, 'info');
+                        updateStatus('dataStatus', `📋 Sample audit: Type "${audits[0].audit_type}", Status: ${audits[0].status}`, 'info');
                     }
                 } else {
-                    updateStatus('dataStatus', \`❌ Audits API failed: HTTP \${response.status}\`, 'error');
+                    updateStatus('dataStatus', `❌ Audits API failed: HTTP ${response.status}`, 'error');
                 }
             } catch (error) {
-                updateStatus('dataStatus', \`❌ Audits API error: \${error.message}\`, 'error');
+                updateStatus('dataStatus', `❌ Audits API error: ${error.message}`, 'error');
             }
         }
 
@@ -485,18 +485,18 @@
             }
 
             try {
-                const response = await fetch(\`\${API_BASE}/api/auth/me\`, {
-                    headers: { 'Authorization': \`Bearer \${authToken}\` }
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 if (response.ok) {
                     const user = await response.json();
-                    updateStatus('dataStatus', \`✅ User API working: Current user \${user.username}\`, 'success');
+                    updateStatus('dataStatus', `✅ User API working: Current user ${user.username}`, 'success');
                 } else {
-                    updateStatus('dataStatus', \`❌ User API failed: HTTP \${response.status}\`, 'error');
+                    updateStatus('dataStatus', `❌ User API failed: HTTP ${response.status}`, 'error');
                 }
             } catch (error) {
-                updateStatus('dataStatus', \`❌ User API error: \${error.message}\`, 'error');
+                updateStatus('dataStatus', `❌ User API error: ${error.message}`, 'error');
             }
         }
 
@@ -515,10 +515,10 @@
             }
 
             try {
-                const response = await fetch(\`\${API_BASE}/api/ai/suggest-score\`, {
+                const response = await fetch(`${API_BASE}/api/ai/suggest-score`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': \`Bearer \${authToken}\`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -529,13 +529,13 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    updateStatus('aiStatus', \`✅ AI Score Suggestion: \${result.suggested_score || 'Generated'}\`, 'success');
-                    updateStatus('aiStatus', \`🧠 AI Reasoning: \${result.reasoning || 'AI analysis completed'}\`, 'info');
+                    updateStatus('aiStatus', `✅ AI Score Suggestion: ${result.suggested_score || 'Generated'}`, 'success');
+                    updateStatus('aiStatus', `🧠 AI Reasoning: ${result.reasoning || 'AI analysis completed'}`, 'info');
                 } else {
                     updateStatus('aiStatus', '⚠️ AI endpoint available but may need real data', 'warning');
                 }
             } catch (error) {
-                updateStatus('aiStatus', \`❌ AI scoring test failed: \${error.message}\`, 'error');
+                updateStatus('aiStatus', `❌ AI scoring test failed: ${error.message}`, 'error');
             }
         }
 
@@ -548,10 +548,10 @@
             }
 
             try {
-                const response = await fetch(\`\${API_BASE}/api/ai/generate-report\`, {
+                const response = await fetch(`${API_BASE}/api/ai/generate-report`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': \`Bearer \${authToken}\`,
+                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ audit_id: 1 })
@@ -560,12 +560,12 @@
                 if (response.ok) {
                     const result = await response.json();
                     updateStatus('aiStatus', '✅ AI Report Generation: Successfully generated', 'success');
-                    updateStatus('aiStatus', \`📊 Report includes: \${Object.keys(result).join(', ')}\`, 'info');
+                    updateStatus('aiStatus', `📊 Report includes: ${Object.keys(result).join(', ')}`, 'info');
                 } else {
                     updateStatus('aiStatus', '⚠️ Report generation endpoint available', 'warning');
                 }
             } catch (error) {
-                updateStatus('aiStatus', \`❌ Report generation test failed: \${error.message}\`, 'error');
+                updateStatus('aiStatus', `❌ Report generation test failed: ${error.message}`, 'error');
             }
         }
     </script>

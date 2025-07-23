@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 import os
 from dotenv import load_dotenv
+import pyodbc 
 
 load_dotenv()
 
@@ -11,6 +12,23 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Database
+    server = 'LAPTOP-OQB79HTV\SQLEXPRESS'
+    database = 'datbase name'
+    username = 'uid'
+    password = 'pwd'
+    driver = '{ODBC Driver 17 for SQL Server}' 
+
+    #Connect to the database
+    try:
+        connection = pyodbc.connect(
+            f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+        )
+        print("Connection successful!")
+        
+        return connection
+    except pyodbc.Error as e:
+        print("Error connecting to database:", e)
+        exit()
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://hotelaudit:password123@localhost:5432/hotel_audit")
     
     # Security
