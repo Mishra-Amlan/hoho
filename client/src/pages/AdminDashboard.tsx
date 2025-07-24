@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History, Plus, Clock, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
+import { SOPFileUpload } from '@/components/SOPFileUpload';
 import { useProperties, useAudits, useHealthCheck, useCreateAudit } from '@/hooks/use-api';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +24,14 @@ const scheduleAuditSchema = z.object({
   auditorId: z.string().min(1, "Auditor is required"),
   reviewerId: z.string().min(1, "Reviewer is required"),
   hotelGroupId: z.string().min(1, "Hotel group is required"),
-  sop: z.string().min(1, "Standard Operating Procedures are required"),
+  sop: z.string().optional(),
+  sopFiles: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    size: z.number(),
+    url: z.string(),
+    uploadedAt: z.string(),
+  })).min(1, "At least one SOP document is required"),
   scheduledDate: z.string().min(1, "Scheduled date is required"),
   priority: z.enum(["low", "medium", "high"]),
   notes: z.string().optional(),
@@ -366,6 +374,7 @@ export default function AdminDashboard() {
   });
 
   const [selectedHotelGroup, setSelectedHotelGroup] = useState<any>(null);
+  const [sopFiles, setSopFiles] = useState<any[]>([]);
 
   // Form setup
   const form = useForm<ScheduleAuditForm>({
@@ -376,6 +385,7 @@ export default function AdminDashboard() {
       reviewerId: '',
       hotelGroupId: '',
       sop: '',
+      sopFiles: [],
       scheduledDate: '',
       priority: 'medium',
       notes: '',
@@ -390,7 +400,8 @@ export default function AdminDashboard() {
         auditorId: parseInt(data.auditorId),
         reviewerId: parseInt(data.reviewerId),
         hotelGroupId: parseInt(data.hotelGroupId),
-        sop: data.sop,
+        sop: data.sop || '',
+        sopFiles: JSON.stringify(data.sopFiles),
         status: 'scheduled',
         priority: data.priority,
         notes: data.notes,
@@ -404,6 +415,8 @@ export default function AdminDashboard() {
 
       setShowScheduleModal(false);
       form.reset();
+      setSopFiles([]);
+      setSelectedHotelGroup(null);
     } catch (error) {
       console.error('Schedule audit error:', error);
       toast({
@@ -611,8 +624,18 @@ export default function AdminDashboard() {
                               field.onChange(value);
                               const group = hotelGroups.find((g: any) => g.id.toString() === value);
                               setSelectedHotelGroup(group);
-                              if (group?.defaultSop) {
-                                form.setValue('sop', group.defaultSop);
+                              // Load default SOP files if available
+                              if (group?.sopFiles) {
+                                try {
+                                  const files = JSON.parse(group.sopFiles);
+                                  setSopFiles(files);
+                                  form.setValue('sopFiles', files);
+                                } catch (e) {
+                                  // Handle parsing error
+                                  setSopFiles([]);
+                                }
+                              } else {
+                                setSopFiles([]);
                               }
                             }} 
                             defaultValue={field.value}
@@ -637,25 +660,29 @@ export default function AdminDashboard() {
 
                     <FormField
                       control={form.control}
-                      name="sop"
+                      name="sopFiles"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Standard Operating Procedures (SOPs)</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="Enter hotel group specific SOPs for AI evaluation standards..."
-                              className="min-h-[120px]"
-                              {...field}
+                            <SOPFileUpload
+                              files={sopFiles}
+                              onFilesChange={(files) => {
+                                setSopFiles(files);
+                                field.onChange(files);
+                              }}
+                              maxFiles={5}
+                              acceptedTypes={['.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg']}
                             />
                           </FormControl>
                           <div className="text-sm text-gray-500">
-                            These SOPs will guide AI analysis and scoring during the audit process.
+                            Upload SOP documents that will guide AI analysis and scoring during the audit process.
                             {selectedHotelGroup && (
                               <div className="mt-2 p-2 bg-blue-50 rounded border">
                                 <strong>Selected Group:</strong> {selectedHotelGroup.name}
-                                {selectedHotelGroup.defaultSop && (
+                                {selectedHotelGroup.sopFiles && (
                                   <div className="mt-1 text-xs">
-                                    <em>Default SOPs have been loaded. You can modify them as needed.</em>
+                                    <em>Default SOP files have been loaded. You can add more or remove existing ones.</em>
                                   </div>
                                 )}
                               </div>

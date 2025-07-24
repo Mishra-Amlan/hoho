@@ -50,6 +50,13 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 ✓ Feedback system allowing Hotel GMs to communicate directly with corporate
 ✓ Real-time KPI calculations based on live audit submissions and reviews
 ✓ Auto-refreshing data every 30 seconds across all dashboards
+✓ **MAJOR: Enhanced SOP functionality with file upload support**
+✓ Added file upload component supporting PDF, DOCX, DOC, PNG, JPG formats
+✓ Updated audit scheduling form to include SOP file uploads instead of text input
+✓ Enhanced database schema to store SOP file metadata (names, types, sizes, URLs)
+✓ Implemented drag-and-drop file upload with validation and preview
+✓ Added hotel group-specific default SOP files that auto-load during audit scheduling
+✓ File size limits (10MB per file, 5 files max) with proper error handling
 
 ## User Preferences
 

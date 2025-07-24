@@ -83,7 +83,23 @@ export async function seedDatabase() {
             acceptable: "70-79: Basic Taj standards met, improvement needed",
             poor: "Below 70: Immediate corrective action required"
           }
-        })
+        }),
+        sopFiles: JSON.stringify([
+          {
+            name: "Taj_Brand_Standards_2024.pdf",
+            type: "application/pdf",
+            size: 2450000,
+            url: "/uploads/sop/taj-brand-standards-2024.pdf",
+            uploadedAt: new Date().toISOString()
+          },
+          {
+            name: "Taj_Service_Excellence_Guide.docx",
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            size: 1200000,
+            url: "/uploads/sop/taj-service-excellence-guide.docx",
+            uploadedAt: new Date().toISOString()
+          }
+        ])
       },
       {
         name: 'Marriott',

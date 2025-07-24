@@ -16,6 +16,7 @@ export const hotelGroups = pgTable("hotel_groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(), // e.g., "Taj Hotels", "Marriott", "Hilton"
   sop: text("sop"), // Standard Operating Procedures as JSON text
+  sopFiles: text("sop_files"), // JSON array of uploaded SOP file paths and metadata
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -40,6 +41,7 @@ export const audits = pgTable("audits", {
   reviewerId: integer("reviewer_id").references(() => users.id),
   hotelGroupId: integer("hotel_group_id").references(() => hotelGroups.id),
   sop: text("sop"), // Hotel group SOP snapshot at audit time
+  sopFiles: text("sop_files"), // JSON array of SOP file paths for this audit
   status: text("status").default('scheduled'), // 'scheduled', 'in_progress', 'submitted', 'reviewed', 'completed'
   overallScore: integer("overall_score"),
   cleanlinessScore: integer("cleanliness_score"),
