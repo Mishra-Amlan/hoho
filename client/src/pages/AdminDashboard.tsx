@@ -1,35 +1,110 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History } from 'lucide-react';
-import { useProperties, useAudits, useHealthCheck, useProperty } from '@/hooks/use-api';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { useProperties, useAudits, useHealthCheck, useCreateAudit } from '@/hooks/use-api';
+import { useQuery } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const scheduleAuditSchema = z.object({
+  propertyId: z.string().min(1, "Property is required"),
+  auditorId: z.string().min(1, "Auditor is required"),
+  reviewerId: z.string().min(1, "Reviewer is required"),
+  scheduledDate: z.string().min(1, "Scheduled date is required"),
+  priority: z.enum(["low", "medium", "high"]),
+  notes: z.string().optional(),
+});
+
+type ScheduleAuditForm = z.infer<typeof scheduleAuditSchema>;
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
-  const [showPropertyDetails, setShowPropertyDetails] = useState(false);
-  const [showAuditHistory, setShowAuditHistory] = useState(false);
-  const { data: properties, isLoading: propertiesLoading, error: propertiesError } = useProperties();
-  const { data: audits, isLoading: auditsLoading, error: auditsError } = useAudits();
-  const { data: selectedProperty } = useProperty(selectedPropertyId || 0);
-  const { data: propertyAudits } = useAudits(selectedPropertyId ? { propertyId: selectedPropertyId } : undefined);
+
+  // Data fetching hooks
+  const { data: properties = [], isLoading: propertiesLoading } = useProperties();
+  const { data: audits = [], isLoading: auditsLoading } = useAudits();
   const { data: healthStatus } = useHealthCheck();
+  const createAudit = useCreateAudit();
+
+  // Fetch users for auditor and reviewer selection
+  const { data: auditors = [] } = useQuery({
+    queryKey: ['/api/users', 'auditor'],
+    queryFn: () => fetch('/api/users?role=auditor').then(res => res.json()),
+  });
+
+  const { data: reviewers = [] } = useQuery({
+    queryKey: ['/api/users', 'reviewer'],
+    queryFn: () => fetch('/api/users?role=reviewer').then(res => res.json()),
+  });
+
+  // Form setup
+  const form = useForm<ScheduleAuditForm>({
+    resolver: zodResolver(scheduleAuditSchema),
+    defaultValues: {
+      propertyId: '',
+      auditorId: '',
+      reviewerId: '',
+      scheduledDate: '',
+      priority: 'medium',
+      notes: '',
+    },
+  });
+
+  // Handle audit scheduling
+  const handleScheduleAudit = async (data: ScheduleAuditForm) => {
+    try {
+      await createAudit.mutateAsync({
+        propertyId: parseInt(data.propertyId),
+        auditorId: parseInt(data.auditorId),
+        reviewerId: parseInt(data.reviewerId),
+        status: 'scheduled',
+        priority: data.priority,
+        notes: data.notes,
+        scheduledDate: new Date(data.scheduledDate).toISOString(),
+      });
+
+      toast({
+        title: "Audit Scheduled",
+        description: "The audit has been successfully scheduled and assigned.",
+      });
+
+      setShowScheduleModal(false);
+      form.reset();
+    } catch (error) {
+      console.error('Schedule audit error:', error);
+      toast({
+        title: "Scheduling Failed",
+        description: "Unable to schedule audit. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (propertiesLoading || auditsLoading) {
     return (
-      <div className="min-h-screen gradient-bg">
+      <div className="min-h-screen bg-gray-50">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+                <div key={i} className="bg-white rounded-xl shadow-lg p-6">
                   <div className="h-12 bg-gray-200 rounded mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded"></div>
                 </div>
@@ -41,399 +116,500 @@ export default function AdminDashboard() {
     );
   }
 
-  if (propertiesError || auditsError) {
-    return (
-      <div className="min-h-screen gradient-bg">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Card className="bg-red-50 border-red-200">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2 text-red-800">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-semibold">Connection Error</span>
-              </div>
-              <p className="text-red-700 mt-2">
-                Unable to connect to the backend API. Please ensure the Python backend is running on port 8000.
-              </p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="mt-4"
-                variant="outline"
-              >
-                Retry Connection
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  // Calculate statistics
+  const totalProperties = properties.length;
+  const totalAudits = audits.length;
+  const pendingAudits = audits.filter((audit: any) => audit.status === 'scheduled' || audit.status === 'in_progress').length;
+  const submittedAudits = audits.filter((audit: any) => audit.status === 'submitted').length;
+  const completedAudits = audits.filter((audit: any) => audit.status === 'approved').length;
+  const rejectedAudits = audits.filter((audit: any) => audit.status === 'needs_revision').length;
 
-  const totalProperties = properties?.length || 0;
-  const totalAudits = audits?.length || 0;
-  const pendingAudits = audits?.filter((audit: any) => audit.status === 'scheduled' || audit.status === 'in_progress').length || 0;
-  const completedAudits = audits?.filter((audit: any) => audit.status === 'completed').length || 0;
-
-  // Calculate compliance distribution
-  const complianceStats = {
-    green: audits?.filter((audit: any) => audit.complianceZone === 'green').length || 0,
-    amber: audits?.filter((audit: any) => audit.complianceZone === 'amber').length || 0,
-    red: audits?.filter((audit: any) => audit.complianceZone === 'red').length || 0,
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Scheduled</Badge>;
+      case 'in_progress':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">In Progress</Badge>;
+      case 'submitted':
+        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Submitted</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
+      case 'needs_revision':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Needs Revision</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
-  const handleScheduleAudit = () => {
-    setShowScheduleModal(true);
+  const getPropertyName = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
+    return property ? property.name : `Property ${propertyId}`;
   };
 
-  const handleViewDetails = (propertyId: number) => {
-    setSelectedPropertyId(propertyId);
-    setShowPropertyDetails(true);
+  const getAuditorName = (auditorId: number) => {
+    const auditor = auditors.find((a: any) => a.id === auditorId);
+    return auditor ? auditor.name : 'Unknown Auditor';
   };
 
-  const handleAuditHistory = (propertyId: number) => {
-    setSelectedPropertyId(propertyId);
-    setShowAuditHistory(true);
+  const getReviewerName = (reviewerId: number) => {
+    const reviewer = reviewers.find((r: any) => r.id === reviewerId);
+    return reviewer ? reviewer.name : 'Unknown Reviewer';
   };
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage properties, audits, and system configuration</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">Admin Dashboard</h1>
+              <p className="text-gray-700 text-lg">Manage properties, schedules, and audit workflow</p>
+            </div>
+            
+            <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule Audit
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Schedule New Audit</DialogTitle>
+                  <DialogDescription>
+                    Create and assign a new audit to an auditor and reviewer
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleScheduleAudit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="propertyId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Property</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select property to audit" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {properties.map((property: any) => (
+                                <SelectItem key={property.id} value={property.id.toString()}>
+                                  {property.name} - {property.location}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="auditorId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assign Auditor</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select auditor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {auditors.map((auditor: any) => (
+                                <SelectItem key={auditor.id} value={auditor.id.toString()}>
+                                  {auditor.name} - {auditor.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="reviewerId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assign Reviewer</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select reviewer" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {reviewers.map((reviewer: any) => (
+                                <SelectItem key={reviewer.id} value={reviewer.id.toString()}>
+                                  {reviewer.name} - {reviewer.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="scheduledDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Scheduled Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                              min={new Date().toISOString().slice(0, 16)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="low">Low Priority</SelectItem>
+                              <SelectItem value="medium">Medium Priority</SelectItem>
+                              <SelectItem value="high">High Priority</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Any special instructions or notes for the auditor..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex space-x-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setShowScheduleModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        className="flex-1"
+                        disabled={createAudit.isPending}
+                      >
+                        {createAudit.isPending ? 'Scheduling...' : 'Schedule Audit'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
           
           {/* System Status */}
           {healthStatus && (
-            <div className="mt-4 flex items-center space-x-2">
-              <div className="flex items-center space-x-1">
+            <div className="mt-4 flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">Backend Connected</span>
+                <span className="text-sm text-gray-600">System Online</span>
               </div>
               <Badge variant="outline" className="text-xs">
                 <Bot className="w-3 h-3 mr-1" />
-                Gemini AI Ready
+                AI Ready
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Database Connected
               </Badge>
             </div>
           )}
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="properties">Properties</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="card-modern shadow-lg">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Building className="h-8 w-8 text-blue-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Properties</p>
                   <p className="text-2xl font-bold text-gray-900">{totalProperties}</p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Building className="h-6 w-6 text-blue-600" />
-                </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="card-modern shadow-lg">
+          
+          <Card>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Audits</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalAudits}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <FileText className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-modern shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-yellow-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Pending Audits</p>
                   <p className="text-2xl font-bold text-gray-900">{pendingAudits}</p>
                 </div>
-                <div className="p-3 bg-yellow-100 rounded-full">
-                  <CalendarDays className="h-6 w-6 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Eye className="h-8 w-8 text-purple-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Awaiting Review</p>
+                  <p className="text-2xl font-bold text-gray-900">{submittedAudits}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-modern shadow-lg">
+          <Card>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Completed</p>
                   <p className="text-2xl font-bold text-gray-900">{completedAudits}</p>
                 </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <XCircle className="h-8 w-8 text-red-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Need Revision</p>
+                  <p className="text-2xl font-bold text-gray-900">{rejectedAudits}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Compliance Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className="card-modern shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2" />
-                Compliance Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="font-medium text-green-800">Green Zone</span>
-                  <Badge className="bg-green-100 text-green-800">{complianceStats.green}</Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                  <span className="font-medium text-yellow-800">Amber Zone</span>
-                  <Badge className="bg-yellow-100 text-yellow-800">{complianceStats.amber}</Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <span className="font-medium text-red-800">Red Zone</span>
-                  <Badge className="bg-red-100 text-red-800">{complianceStats.red}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-modern shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bot className="h-5 w-5 mr-2" />
-                AI Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                  <span className="text-sm">Photo Analysis with Gemini Vision</span>
-                </div>
-                <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  <span className="text-sm">Automated Report Generation</span>
-                </div>
-                <div className="flex items-center p-3 bg-purple-50 rounded-lg">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                  <span className="text-sm">Smart Score Suggestions</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-            {/* Properties Table */}
-            <Card className="card-modern shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Properties</span>
-              <Button onClick={handleScheduleAudit} className="btn-primary">
-                Schedule New Audit
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {properties && properties.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2">Property Name</th>
-                      <th className="text-left py-2">Location</th>
-                      <th className="text-left py-2">Type</th>
-                      <th className="text-left py-2">Created</th>
-                      <th className="text-left py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {properties.map((property: any) => (
-                      <tr key={property.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 font-medium">{property.name}</td>
-                        <td className="py-3 text-gray-600">{property.location}</td>
-                        <td className="py-3 text-gray-600">{property.region || 'Hotel'}</td>
-                        <td className="py-3 text-gray-600">
-                          {property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="py-3">
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => handleViewDetails(property.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <Eye className="h-3 w-3" />
-                              View Details
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleAuditHistory(property.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <History className="h-3 w-3" />
-                              Audit History
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Building className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No properties found. Add your first property to get started.</p>
-              </div>
-            )}
-          </CardContent>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="audits" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="audits">Audit Management</TabsTrigger>
+            <TabsTrigger value="properties">Properties</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="audits" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Audits</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {audits.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No audits scheduled yet</p>
+                    <p className="text-sm text-gray-500">Create your first audit using the "Schedule Audit" button</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3">Property</th>
+                          <th className="text-left p-3">Auditor</th>
+                          <th className="text-left p-3">Reviewer</th>
+                          <th className="text-left p-3">Status</th>
+                          <th className="text-left p-3">Created</th>
+                          <th className="text-left p-3">Last Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {audits.slice(0, 10).map((audit: any) => (
+                          <tr key={audit.id} className="border-b hover:bg-gray-50">
+                            <td className="p-3 font-medium">{getPropertyName(audit.propertyId)}</td>
+                            <td className="p-3">{getAuditorName(audit.auditorId)}</td>
+                            <td className="p-3">{getReviewerName(audit.reviewerId)}</td>
+                            <td className="p-3">{getStatusBadge(audit.status)}</td>
+                            <td className="p-3 text-gray-600">
+                              {new Date(audit.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="p-3 text-gray-600">
+                              {audit.submittedAt 
+                                ? new Date(audit.submittedAt).toLocaleDateString()
+                                : audit.reviewedAt 
+                                  ? new Date(audit.reviewedAt).toLocaleDateString()
+                                  : new Date(audit.createdAt).toLocaleDateString()
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="analytics">
-            <AnalyticsDashboard audits={audits || []} properties={properties || []} />
-          </TabsContent>
-
-          <TabsContent value="properties">
+          
+          <TabsContent value="properties" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Property Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Property management features will be implemented here.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {properties.map((property: any) => {
+                    const propertyAudits = audits.filter((audit: any) => audit.propertyId === property.id);
+                    const lastAudit = propertyAudits.sort((a: any, b: any) => 
+                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    )[0];
+
+                    return (
+                      <Card key={property.id} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                                {property.name}
+                              </h3>
+                              <p className="text-sm text-gray-600 mb-2">{property.location}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {property.region}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Audits:</span>
+                              <span className="font-medium">{propertyAudits.length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Last Audit:</span>
+                              <span className="font-medium">
+                                {lastAudit ? new Date(lastAudit.createdAt).toLocaleDateString() : 'Never'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Status:</span>
+                              <span className="font-medium">
+                                {lastAudit ? getStatusBadge(lastAudit.status) : 
+                                 <Badge variant="outline" className="text-xs">No Audits</Badge>}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Audit Status Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Scheduled</span>
+                      <span className="font-semibold">{audits.filter((a: any) => a.status === 'scheduled').length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">In Progress</span>
+                      <span className="font-semibold">{audits.filter((a: any) => a.status === 'in_progress').length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Submitted</span>
+                      <span className="font-semibold">{submittedAudits}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Approved</span>
+                      <span className="font-semibold">{completedAudits}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Needs Revision</span>
+                      <span className="font-semibold">{rejectedAudits}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Report Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Report generation and management features will be implemented here.</p>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Team Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Auditors Active</span>
+                        <span className="font-semibold">{auditors.length}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {auditors.map((auditor: any) => auditor.name).join(', ')}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Reviewers Active</span>
+                        <span className="font-semibold">{reviewers.length}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {reviewers.map((reviewer: any) => reviewer.name).join(', ')}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Total System Users</span>
+                        <span className="font-semibold">{auditors.length + reviewers.length + 1}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
-
-        {/* Schedule Audit Modal */}
-        <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Schedule New Audit</DialogTitle>
-              <DialogDescription>
-                Create a new audit for a property with AI-powered features.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Property</label>
-                  <select className="w-full p-2 border rounded-lg">
-                    <option>Select a property...</option>
-                    {properties?.map((property: any) => (
-                      <option key={property.id} value={property.id}>{property.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Auditor</label>
-                  <select className="w-full p-2 border rounded-lg">
-                    <option>Select an auditor...</option>
-                    <option value="auditor1">Sarah Johnson</option>
-                    <option value="auditor2">Michael Chen</option>
-                    <option value="auditor3">Emily Davis</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Audit Date</label>
-                  <input 
-                    type="date" 
-                    className="w-full p-2 border rounded-lg"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Audit Type</label>
-                  <select className="w-full p-2 border rounded-lg">
-                    <option>Standard Brand Audit</option>
-                    <option>Compliance Audit</option>
-                    <option>Mystery Guest Audit</option>
-                    <option>Follow-up Audit</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Priority</label>
-                  <select className="w-full p-2 border rounded-lg">
-                    <option>Normal</option>
-                    <option>High</option>
-                    <option>Urgent</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Special Instructions</label>
-                  <textarea 
-                    className="w-full p-2 border rounded-lg h-20"
-                    placeholder="Add any special instructions for the auditor..."
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <div className="flex items-center text-blue-800">
-                <Bot className="h-4 w-4 mr-2" />
-                <span className="font-semibold">AI Features Included</span>
-              </div>
-              <p className="text-sm text-blue-700 mt-1">
-                This audit includes photo analysis, automated scoring, and intelligent reporting powered by Google Gemini.
-              </p>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button variant="outline" onClick={() => setShowScheduleModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                className="btn-primary"
-                onClick={() => {
-                  // Handle scheduling logic here
-                  setShowScheduleModal(false);
-                }}
-              >
-                Schedule Audit
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

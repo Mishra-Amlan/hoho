@@ -156,6 +156,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Users endpoint for getting auditors and reviewers
+  app.get("/api/users", async (req, res) => {
+    try {
+      const { role } = req.query;
+      const users = await storage.getAllUsers();
+      
+      if (role) {
+        const filteredUsers = users.filter(user => user.role === role);
+        res.json(filteredUsers.map(user => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
+      } else {
+        res.json(users.map(user => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
