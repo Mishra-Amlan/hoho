@@ -94,10 +94,6 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return db.select().from(users);
-  }
-
   async createAudit(audit: InsertAudit): Promise<Audit> {
     const result = await db.insert(audits).values(audit).returning();
     return result[0];
@@ -264,6 +260,10 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   // Property methods  
