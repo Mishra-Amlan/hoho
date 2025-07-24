@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,24 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Audit, AuditItem } from '@shared/schema';
 import { HOTEL_AUDIT_CHECKLIST, ChecklistItem } from '@shared/auditChecklist';
-import { AuditChecklistModal } from '@/components/AuditChecklistModal';
-import { PhotoUploadModal } from '@/components/PhotoUploadModal';
-import { VoiceRecorder } from '@/components/VoiceRecorder';
-import { DragDropUpload } from '@/components/DragDropUpload';
 import { useAudits, useUpdateAudit } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Send, FileText, Camera, Mic, Video, MessageSquare, CheckCircle, Clock, Star } from 'lucide-react';
+import { Save, Send, Camera, Video, MessageSquare } from 'lucide-react';
 
 export default function AuditorDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [showChecklistModal, setShowChecklistModal] = useState(false);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [draftNotes, setDraftNotes] = useState('');
-  const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
-  const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
   const [selectedChecklistItem, setSelectedChecklistItem] = useState<ChecklistItem | null>(null);
   const [itemScores, setItemScores] = useState<Record<string, { score: number | null; comments: string; media: any[] }>>({});
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -79,25 +69,6 @@ export default function AuditorDashboard() {
         variant: "destructive"
       });
     }
-  };
-
-  const handleVoiceRecording = (audioBlob: Blob, transcription?: string) => {
-    const newVoiceNote = {
-      id: Date.now().toString(),
-      audioBlob,
-      transcription,
-      timestamp: new Date().toISOString()
-    };
-    setVoiceNotes(prev => [...prev, newVoiceNote]);
-  };
-
-  const handleFilesChange = (files: any[]) => {
-    setAttachedFiles(files);
-  };
-
-  const handleChecklistItemSelect = (item: ChecklistItem) => {
-    setSelectedChecklistItem(item);
-    setShowChecklistModal(true);
   };
 
   const handleMediaCapture = (itemId: string, mediaType: 'photo' | 'video' | 'text', content: any) => {
@@ -196,7 +167,7 @@ export default function AuditorDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               {/* Progress Overview */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Audit Progress</h3>
@@ -229,291 +200,201 @@ export default function AuditorDashboard() {
                   })}
                 </div>
               </div>
-
-              {/* Quick Actions */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="space-y-3">
-                  <Button 
-                    className="w-full btn-success" 
-                    onClick={() => setShowChecklistModal(true)}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />Continue Checklist
-                  </Button>
-                  <Button 
-                    className="w-full btn-primary" 
-                    onClick={() => setShowPhotoModal(true)}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />Upload Photos
-                  </Button>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" 
-                    onClick={handleSaveDraft}
-                  >
-                    <Mic className="h-4 w-4 mr-2" />Record Voice Note
-                  </Button>
-                  <Button 
-                    className="w-full bg-gray-500 hover:bg-gray-600"
-                    onClick={handleSaveDraft}
-                    disabled={updateAudit.isPending}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
-                  </Button>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Enhanced Audit Work Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Comprehensive Hotel Audit Checklist */}
-            {HOTEL_AUDIT_CHECKLIST.map((category) => (
-              <Card key={category.id} className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{category.name}</span>
-                    <span className="text-sm text-gray-500">
-                      {category.items.filter(item => getItemScore(item.id).score !== null).length}/{category.items.length} completed
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {category.items.map((item) => {
-                      const itemData = getItemScore(item.id);
-                      return (
-                        <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 mb-1">{item.item}</h3>
-                              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">Max Score: {item.maxScore}</span>
-                                <span className="text-xs text-gray-500">Weight: {item.weight}</span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <Select 
-                                value={itemData.score?.toString() || ''} 
-                                onValueChange={(value) => handleScoreChange(item.id, parseInt(value), itemData.comments)}
-                              >
-                                <SelectTrigger className="w-40">
-                                  <SelectValue placeholder="Select Score" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: item.maxScore }, (_, i) => i + 1).map((score) => (
-                                    <SelectItem key={score} value={score.toString()}>
-                                      {score}/{item.maxScore}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          
-                          {/* Media Upload Options */}
-                          <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Collection</label>
-                            <div className="flex gap-2 mb-3">
-                              {item.mediaTypes.includes('photo') && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedChecklistItem(item);
-                                    setCurrentMediaType('photo');
-                                    setShowMediaModal(true);
-                                  }}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Camera className="h-4 w-4" />
-                                  Photo
-                                  {item.requiredMedia?.includes('photo') && <span className="text-red-500">*</span>}
-                                </Button>
-                              )}
-                              {item.mediaTypes.includes('video') && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedChecklistItem(item);
-                                    setCurrentMediaType('video');
-                                    setShowMediaModal(true);
-                                  }}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Video className="h-4 w-4" />
-                                  Video
-                                  {item.requiredMedia?.includes('video') && <span className="text-red-500">*</span>}
-                                </Button>
-                              )}
-                              {item.mediaTypes.includes('text') && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedChecklistItem(item);
-                                    setCurrentMediaType('text');
-                                    setShowMediaModal(true);
-                                  }}
-                                  className="flex items-center gap-1"
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                  Text Notes
-                                  {item.requiredMedia?.includes('text') && <span className="text-red-500">*</span>}
-                                </Button>
-                              )}
-                            </div>
-                            
-                            {/* Display collected media */}
-                            {itemData.media.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2 mb-4">
-                                {itemData.media.map((media: any, index: number) => (
-                                  <div key={index} className="border rounded p-2 bg-gray-50">
-                                    <div className="text-xs text-gray-600 mb-1">
-                                      {media.type === 'photo' && '📷 Photo'}
-                                      {media.type === 'video' && '📹 Video'}
-                                      {media.type === 'text' && '📝 Text Note'}
-                                    </div>
-                                    {media.type === 'text' && (
-                                      <p className="text-sm text-gray-800 truncate">{media.content}</p>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Comments */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Auditor Comments</label>
-                            <Textarea 
-                              rows={3} 
-                              value={itemData.comments}
-                              onChange={(e) => handleScoreChange(item.id, itemData.score || 0, e.target.value)}
-                              placeholder="Add your observations and comments..."
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-                  {/* Additional Notes Section */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Additional Audit Notes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea 
-                        value={draftNotes}
-                        onChange={(e) => setDraftNotes(e.target.value)}
-                        placeholder="Add any additional observations, recommendations, or overall assessment notes..."
-                        className="min-h-24"
-                      />
-                      
-                      {/* Enhanced Submit Actions */}
-                      <div className="flex space-x-4 mt-6">
-                        <Button 
-                          variant="outline" 
-                          className="flex-1"
-                          onClick={handleSaveDraft}
-                          disabled={updateAudit.isPending}
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
-                        </Button>
-                        <Button 
-                          className="flex-1 bg-green-500 hover:bg-green-600"
-                          onClick={handleSubmitForReview}
-                          disabled={updateAudit.isPending}
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-          </div>
-
-          {/* Sidebar Tools */}
-          <div className="space-y-6">
-            {/* Voice Recorder */}
-            <VoiceRecorder 
-              onRecordingComplete={handleVoiceRecording}
-              className="w-full"
-            />
-
-            {/* File Upload Center */}
-            <Card>
+        {/* Comprehensive Hotel Audit Checklist */}
+        <div className="space-y-6">
+          {HOTEL_AUDIT_CHECKLIST.map((category) => (
+            <Card key={category.id} className="mb-6">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Camera className="h-5 w-5 mr-2" />
-                  Media Upload
+                <CardTitle className="flex items-center justify-between">
+                  <span>{category.name}</span>
+                  <span className="text-sm text-gray-500">
+                    {category.items.filter(item => getItemScore(item.id).score !== null).length}/{category.items.length} completed
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <DragDropUpload
-                  onFilesChange={handleFilesChange}
-                  acceptedTypes={['image/*', 'video/*', '.pdf']}
-                  maxFiles={10}
-                  maxSizeInMB={50}
-                />
-              </CardContent>
-            </Card>
+                <div className="space-y-6">
+                  {category.items.map((item) => {
+                    const itemData = getItemScore(item.id);
+                    return (
+                      <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1">{item.item}</h3>
+                            <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Max Score: {item.maxScore}</span>
+                              <span className="text-xs text-gray-500">Weight: {item.weight}</span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <Select 
+                              value={itemData.score?.toString() || ''} 
+                              onValueChange={(value) => handleScoreChange(item.id, parseInt(value), itemData.comments)}
+                            >
+                              <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Select Score" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: item.maxScore }, (_, i) => i + 1).map((score) => (
+                                  <SelectItem key={score} value={score.toString()}>
+                                    {score}/{item.maxScore}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        {/* Media Upload Options */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Collection</label>
+                          <div className="flex gap-2 mb-3">
+                            {item.mediaTypes.includes('photo') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'image/*';
+                                  input.onchange = (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) {
+                                      handleMediaCapture(item.id, 'photo', URL.createObjectURL(file));
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <Camera className="h-4 w-4" />
+                                Photo
+                                {item.requiredMedia?.includes('photo') && <span className="text-red-500">*</span>}
+                              </Button>
+                            )}
+                            {item.mediaTypes.includes('video') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'video/*';
+                                  input.onchange = (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) {
+                                      handleMediaCapture(item.id, 'video', URL.createObjectURL(file));
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <Video className="h-4 w-4" />
+                                Video
+                                {item.requiredMedia?.includes('video') && <span className="text-red-500">*</span>}
+                              </Button>
+                            )}
+                            {item.mediaTypes.includes('text') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const textNote = prompt('Enter your text note:');
+                                  if (textNote) {
+                                    handleMediaCapture(item.id, 'text', textNote);
+                                  }
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                                Text Notes
+                                {item.requiredMedia?.includes('text') && <span className="text-red-500">*</span>}
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* Display collected media */}
+                          {itemData.media.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                              {itemData.media.map((media: any, index: number) => (
+                                <div key={index} className="border rounded p-2 bg-gray-50">
+                                  <div className="text-xs text-gray-600 mb-1">
+                                    {media.type === 'photo' && '📷 Photo'}
+                                    {media.type === 'video' && '📹 Video'}
+                                    {media.type === 'text' && '📝 Text Note'}
+                                  </div>
+                                  {media.type === 'text' && (
+                                    <p className="text-sm text-gray-800 truncate">{media.content}</p>
+                                  )}
+                                  {media.type === 'photo' && (
+                                    <img src={media.content} alt="Evidence" className="w-full h-16 object-cover rounded" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => setShowChecklistModal(true)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Continue Checklist
-                </Button>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => setShowPhotoModal(true)}
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Upload Photos
-                </Button>
+                        {/* Comments */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Auditor Comments</label>
+                          <Textarea 
+                            rows={3} 
+                            value={itemData.comments}
+                            onChange={(e) => handleScoreChange(item.id, itemData.score || 0, e.target.value)}
+                            placeholder="Add your observations and comments..."
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
-          </div>
+          ))}
+
+          {/* Additional Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Audit Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea 
+                value={draftNotes}
+                onChange={(e) => setDraftNotes(e.target.value)}
+                placeholder="Add any additional observations, recommendations, or overall assessment notes..."
+                className="min-h-24"
+              />
+              
+              {/* Submit Actions */}
+              <div className="flex space-x-4 mt-6">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={handleSaveDraft}
+                  disabled={updateAudit.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
+                </Button>
+                <Button 
+                  className="flex-1 bg-green-500 hover:bg-green-600"
+                  onClick={handleSubmitForReview}
+                  disabled={updateAudit.isPending}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Modals */}
-        {currentAudit && (
-          <>
-            <AuditChecklistModal
-              isOpen={showChecklistModal}
-              onOpenChange={setShowChecklistModal}
-              auditId={currentAudit.id}
-              propertyName={`Property ${currentAudit.propertyId}`}
-            />
-
-            <PhotoUploadModal
-              isOpen={showPhotoModal}
-              onOpenChange={setShowPhotoModal}
-              auditId={currentAudit.id}
-              propertyName={`Property ${currentAudit.propertyId}`}
-            />
-          </>
-        )}
       </div>
     </div>
   );
