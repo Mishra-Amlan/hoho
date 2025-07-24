@@ -12,11 +12,20 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const hotelGroups = pgTable("hotel_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // e.g., "Taj Hotels", "Marriott", "Hilton"
+  sop: text("sop"), // Standard Operating Procedures as JSON text
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   location: text("location").notNull(),
   region: text("region").notNull(),
+  hotelGroupId: integer("hotel_group_id").references(() => hotelGroups.id),
   image: text("image"),
   lastAuditScore: integer("last_audit_score"),
   nextAuditDate: timestamp("next_audit_date"),
@@ -29,6 +38,8 @@ export const audits = pgTable("audits", {
   propertyId: integer("property_id").notNull().references(() => properties.id),
   auditorId: integer("auditor_id").references(() => users.id),
   reviewerId: integer("reviewer_id").references(() => users.id),
+  hotelGroupId: integer("hotel_group_id").references(() => hotelGroups.id),
+  sop: text("sop"), // Hotel group SOP snapshot at audit time
   status: text("status").default('scheduled'), // 'scheduled', 'in_progress', 'submitted', 'reviewed', 'completed'
   overallScore: integer("overall_score"),
   cleanlinessScore: integer("cleanliness_score"),
@@ -62,10 +73,16 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
 });
 
+export const insertHotelGroupSchema = createInsertSchema(hotelGroups).pick({
+  name: true,
+  sop: true,
+});
+
 export const insertPropertySchema = createInsertSchema(properties).pick({
   name: true,
   location: true,
   region: true,
+  hotelGroupId: true,
   image: true,
 });
 
@@ -73,6 +90,8 @@ export const insertAuditSchema = createInsertSchema(audits).pick({
   propertyId: true,
   auditorId: true,
   reviewerId: true,
+  hotelGroupId: true,
+  sop: true,
 });
 
 export const insertAuditItemSchema = createInsertSchema(auditItems).pick({

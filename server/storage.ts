@@ -1,5 +1,5 @@
 import { 
-  users, properties, audits, auditItems,
+  users, properties, audits, auditItems, hotelGroups,
   type User, type InsertUser, 
   type Property, type InsertProperty,
   type Audit, type InsertAudit,
@@ -8,12 +8,22 @@ import {
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
+// Define HotelGroup type
+export type HotelGroup = typeof hotelGroups.$inferSelect;
+export type InsertHotelGroup = typeof hotelGroups.$inferInsert;
+
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  
+  // Hotel Group methods
+  getAllHotelGroups(): Promise<HotelGroup[]>;
+  getHotelGroup(id: number): Promise<HotelGroup | undefined>;
+  createHotelGroup(hotelGroup: InsertHotelGroup): Promise<HotelGroup>;
+  updateHotelGroup(id: number, hotelGroup: Partial<HotelGroup>): Promise<HotelGroup | undefined>;
   
   // Property methods
   getAllProperties(): Promise<Property[]>;
@@ -55,6 +65,26 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users);
+  }
+
+  // Hotel Group methods
+  async getAllHotelGroups(): Promise<HotelGroup[]> {
+    return db.select().from(hotelGroups);
+  }
+
+  async getHotelGroup(id: number): Promise<HotelGroup | undefined> {
+    const result = await db.select().from(hotelGroups).where(eq(hotelGroups.id, id));
+    return result[0];
+  }
+
+  async createHotelGroup(hotelGroup: InsertHotelGroup): Promise<HotelGroup> {
+    const result = await db.insert(hotelGroups).values(hotelGroup).returning();
+    return result[0];
+  }
+
+  async updateHotelGroup(id: number, hotelGroup: Partial<HotelGroup>): Promise<HotelGroup | undefined> {
+    const result = await db.update(hotelGroups).set(hotelGroup).where(eq(hotelGroups.id, id)).returning();
+    return result[0];
   }
 
   // Property methods
@@ -123,20 +153,24 @@ export class DatabaseStorage implements IStorage {
 // Memory storage implementation for development testing
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
+  private hotelGroups: Map<number, HotelGroup>;
   private properties: Map<number, Property>;
   private audits: Map<number, Audit>;
   private auditItems: Map<number, AuditItem>;
   private currentUserId: number;
+  private currentHotelGroupId: number;
   private currentPropertyId: number;
   private currentAuditId: number;
   private currentAuditItemId: number;
 
   constructor() {
     this.users = new Map();
+    this.hotelGroups = new Map();
     this.properties = new Map();
     this.audits = new Map();
     this.auditItems = new Map();
     this.currentUserId = 1;
+    this.currentHotelGroupId = 1;
     this.currentPropertyId = 1;
     this.currentAuditId = 1;
     this.currentAuditItemId = 1;
@@ -264,6 +298,36 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  // Hotel Group methods
+  async getAllHotelGroups(): Promise<HotelGroup[]> {
+    return Array.from(this.hotelGroups.values());
+  }
+
+  async getHotelGroup(id: number): Promise<HotelGroup | undefined> {
+    return this.hotelGroups.get(id);
+  }
+
+  async createHotelGroup(insertHotelGroup: InsertHotelGroup): Promise<HotelGroup> {
+    const id = this.currentHotelGroupId++;
+    const hotelGroup: HotelGroup = { 
+      ...insertHotelGroup, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.hotelGroups.set(id, hotelGroup);
+    return hotelGroup;
+  }
+
+  async updateHotelGroup(id: number, updateData: Partial<HotelGroup>): Promise<HotelGroup | undefined> {
+    const hotelGroup = this.hotelGroups.get(id);
+    if (!hotelGroup) return undefined;
+    
+    const updated = { ...hotelGroup, ...updateData, updatedAt: new Date() };
+    this.hotelGroups.set(id, updated);
+    return updated;
   }
 
   // Property methods  

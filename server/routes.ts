@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertHotelGroupSchema } from "@shared/schema";
 import type { AuditItem } from "@shared/schema";
 import { z } from "zod";
 import { seedDatabase } from "./seedDatabase";
@@ -114,6 +114,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ user: userWithoutPassword });
     } catch (error) {
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Hotel Group endpoints
+  app.get("/api/hotel-groups", async (req, res) => {
+    try {
+      const hotelGroups = await storage.getAllHotelGroups();
+      res.json(hotelGroups);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch hotel groups" });
+    }
+  });
+
+  app.get("/api/hotel-groups/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const hotelGroup = await storage.getHotelGroup(id);
+      
+      if (!hotelGroup) {
+        return res.status(404).json({ message: "Hotel group not found" });
+      }
+      
+      res.json(hotelGroup);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch hotel group" });
+    }
+  });
+
+  app.post("/api/hotel-groups", async (req, res) => {
+    try {
+      const hotelGroupData = insertHotelGroupSchema.parse(req.body);
+      const hotelGroup = await storage.createHotelGroup(hotelGroupData);
+      res.json(hotelGroup);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create hotel group" });
+    }
+  });
+
+  app.patch("/api/hotel-groups/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      const hotelGroup = await storage.updateHotelGroup(id, updateData);
+      
+      if (!hotelGroup) {
+        return res.status(404).json({ message: "Hotel group not found" });
+      }
+      
+      res.json(hotelGroup);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update hotel group" });
     }
   });
 

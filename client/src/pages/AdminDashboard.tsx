@@ -22,6 +22,8 @@ const scheduleAuditSchema = z.object({
   propertyId: z.string().min(1, "Property is required"),
   auditorId: z.string().min(1, "Auditor is required"),
   reviewerId: z.string().min(1, "Reviewer is required"),
+  hotelGroupId: z.string().min(1, "Hotel group is required"),
+  sop: z.string().min(1, "Standard Operating Procedures are required"),
   scheduledDate: z.string().min(1, "Scheduled date is required"),
   priority: z.enum(["low", "medium", "high"]),
   notes: z.string().optional(),
@@ -357,6 +359,14 @@ export default function AdminDashboard() {
     queryFn: () => fetch('/api/users?role=reviewer').then(res => res.json()),
   });
 
+  // Fetch hotel groups for SOP selection
+  const { data: hotelGroups = [] } = useQuery({
+    queryKey: ['/api/hotel-groups'],
+    queryFn: () => fetch('/api/hotel-groups').then(res => res.json()),
+  });
+
+  const [selectedHotelGroup, setSelectedHotelGroup] = useState<any>(null);
+
   // Form setup
   const form = useForm<ScheduleAuditForm>({
     resolver: zodResolver(scheduleAuditSchema),
@@ -364,6 +374,8 @@ export default function AdminDashboard() {
       propertyId: '',
       auditorId: '',
       reviewerId: '',
+      hotelGroupId: '',
+      sop: '',
       scheduledDate: '',
       priority: 'medium',
       notes: '',
@@ -377,6 +389,8 @@ export default function AdminDashboard() {
         propertyId: parseInt(data.propertyId),
         auditorId: parseInt(data.auditorId),
         reviewerId: parseInt(data.reviewerId),
+        hotelGroupId: parseInt(data.hotelGroupId),
+        sop: data.sop,
         status: 'scheduled',
         priority: data.priority,
         notes: data.notes,
@@ -581,6 +595,72 @@ export default function AdminDashboard() {
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="hotelGroupId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hotel Group</FormLabel>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              const group = hotelGroups.find((g: any) => g.id.toString() === value);
+                              setSelectedHotelGroup(group);
+                              if (group?.defaultSop) {
+                                form.setValue('sop', group.defaultSop);
+                              }
+                            }} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select hotel group" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {hotelGroups.map((group: any) => (
+                                <SelectItem key={group.id} value={group.id.toString()}>
+                                  {group.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="sop"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Standard Operating Procedures (SOPs)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter hotel group specific SOPs for AI evaluation standards..."
+                              className="min-h-[120px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <div className="text-sm text-gray-500">
+                            These SOPs will guide AI analysis and scoring during the audit process.
+                            {selectedHotelGroup && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded border">
+                                <strong>Selected Group:</strong> {selectedHotelGroup.name}
+                                {selectedHotelGroup.defaultSop && (
+                                  <div className="mt-1 text-xs">
+                                    <em>Default SOPs have been loaded. You can modify them as needed.</em>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
