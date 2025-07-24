@@ -29,6 +29,7 @@ export default function ReviewerDashboard() {
   const updateAudit = useUpdateAudit();
   
   // Filter audits that are submitted and awaiting review, or already approved for viewing
+  // Only show audits that have been submitted by auditors
   const pendingAudits = allAudits.filter((audit: any) => audit.status === 'submitted');
   const completedAudits = allAudits.filter((audit: any) => audit.status === 'approved');
   const availableAudits = [...pendingAudits, ...completedAudits];

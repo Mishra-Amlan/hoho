@@ -61,19 +61,19 @@ function ApprovedAuditsOverview({ audits, properties }: { audits: any[], propert
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Overall Score:</span>
-                  <span className="font-medium">{audit.overallScore || 'N/A'}</span>
+                  <span className="font-medium">{audit.overallScore !== null && audit.overallScore !== undefined ? audit.overallScore : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Cleanliness:</span>
-                  <span className="font-medium">{audit.cleanlinessScore || 'N/A'}</span>
+                  <span className="font-medium">{audit.cleanlinessScore !== null && audit.cleanlinessScore !== undefined ? audit.cleanlinessScore : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Branding:</span>
-                  <span className="font-medium">{audit.brandingScore || 'N/A'}</span>
+                  <span className="font-medium">{audit.brandingScore !== null && audit.brandingScore !== undefined ? audit.brandingScore : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Operational:</span>
-                  <span className="font-medium">{audit.operationalScore || 'N/A'}</span>
+                  <span className="font-medium">{audit.operationalScore !== null && audit.operationalScore !== undefined ? audit.operationalScore : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Reviewed:</span>

@@ -7,6 +7,8 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 ## Recent Changes (January 24, 2025)
 
 ✓ Successfully migrated project from Replit Agent to Replit environment
+✓ Fixed admin dashboard scoring display issues - scores now show properly instead of 'N/A'
+✓ Fixed reviewer dashboard filtering - now only shows audits submitted by auditors
 ✓ Converted database schema from SQLite to PostgreSQL
 ✓ Set up PostgreSQL database with proper connection and seeding
 ✓ Fixed all dependency and configuration issues
