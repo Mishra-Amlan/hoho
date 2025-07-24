@@ -32,12 +32,12 @@ export default function CorporateDashboard() {
 
   // Fetch real-time data
   const { data: audits = [], isLoading: auditsLoading } = useQuery({
-    queryKey: ['/api/audits'],
+    queryKey: ['/audits'],
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['/api/properties'],
+    queryKey: ['/properties'],
     refetchInterval: 30000
   });
 
@@ -52,6 +52,11 @@ export default function CorporateDashboard() {
       return auditDate.getMonth() === now.getMonth() && auditDate.getFullYear() === now.getFullYear();
     }).length
   };
+
+  // Debug logging
+  console.log('Corporate - Audits data:', audits);
+  console.log('Corporate - Properties data:', properties);
+  console.log('Corporate - KPI data:', kpiData);
 
   // Calculate regional data from real audits
   const regionalData = (properties as any[]).map((property: any) => {
@@ -360,8 +365,8 @@ export default function CorporateDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {regionalData.map((region: any) => (
-                  <div key={region.region} className="flex items-center justify-between">
+                {regionalData.map((region: any, index: number) => (
+                  <div key={`${region.region}-${index}`} className="flex items-center justify-between">
                     <span className="font-medium text-gray-900">{region.region}</span>
                     <div className="flex items-center space-x-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">

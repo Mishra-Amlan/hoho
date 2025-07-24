@@ -29,17 +29,17 @@ export default function HotelGMDashboard() {
   const propertyId = 1; // In a real app, this would come from user context
   
   const { data: audits = [], isLoading: auditsLoading } = useQuery({
-    queryKey: ['/api/audits'],
+    queryKey: ['/audits'],
     refetchInterval: 30000
   });
 
   const { data: property, isLoading: propertyLoading } = useQuery({
-    queryKey: [`/api/properties/${propertyId}`],
+    queryKey: [`/properties/${propertyId}`],
     refetchInterval: 30000
   });
 
   const { data: auditItems = [], isLoading: itemsLoading } = useQuery({
-    queryKey: [`/api/audits/1/items`], // Assuming audit 1 is for this property
+    queryKey: [`/audits/1/items`], // Assuming audit 1 is for this property
     refetchInterval: 30000
   });
 
@@ -48,6 +48,11 @@ export default function HotelGMDashboard() {
   const latestAudit = propertyAudits.sort((a: any, b: any) => 
     new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
   )[0];
+  
+  // Debug logging
+  console.log('Audits data:', audits);
+  console.log('Property audits:', propertyAudits);
+  console.log('Latest audit:', latestAudit);
 
   // Calculate real-time property stats
   const propertyStats = {
