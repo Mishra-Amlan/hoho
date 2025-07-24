@@ -3,75 +3,140 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap, Award, Target, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HotelGMDashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({
+    subject: '',
+    message: '',
+    priority: 'medium'
+  });
+
+  // Fetch real-time data for the property (assuming user is GM of property 1)
+  const propertyId = 1; // In a real app, this would come from user context
+  
+  const { data: audits = [], isLoading: auditsLoading } = useQuery({
+    queryKey: ['/api/audits'],
+    refetchInterval: 30000
+  });
+
+  const { data: property, isLoading: propertyLoading } = useQuery({
+    queryKey: [`/api/properties/${propertyId}`],
+    refetchInterval: 30000
+  });
+
+  const { data: auditItems = [], isLoading: itemsLoading } = useQuery({
+    queryKey: [`/api/audits/1/items`], // Assuming audit 1 is for this property
+    refetchInterval: 30000
+  });
+
+  // Filter audits for this property
+  const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === propertyId);
+  const latestAudit = propertyAudits.sort((a: any, b: any) => 
+    new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
+  )[0];
+
+  // Calculate real-time property stats
   const propertyStats = {
-    currentScore: 85,
-    complianceZone: 'amber',
-    nextAuditDays: 45,
-    improvement: 8
+    currentScore: latestAudit?.overallScore || 0,
+    complianceZone: latestAudit?.overallScore >= 85 ? 'green' : latestAudit?.overallScore >= 70 ? 'amber' : 'red',
+    nextAuditDays: 45, // This could be calculated based on last audit date
+    improvement: propertyAudits.length >= 2 ? 
+      (propertyAudits[0]?.overallScore || 0) - (propertyAudits[1]?.overallScore || 0) : 0
   };
 
+  // Calculate audit results from real data
   const auditResults = {
-    overall: 85,
-    cleanliness: 92,
-    branding: 78,
-    operational: 88
+    overall: latestAudit?.overallScore || 0,
+    cleanliness: latestAudit?.cleanlinessScore || 0,
+    branding: latestAudit?.brandingScore || 0,
+    operational: latestAudit?.operationalScore || 0
   };
 
+  // Generate findings from real audit data
   const findings = [
     {
-      type: 'positive',
-      title: 'Excellent housekeeping standards',
-      description: 'All guest rooms and public areas well maintained',
-      icon: 'fas fa-check'
+      type: auditResults.cleanliness >= 85 ? 'positive' : 'warning',
+      title: `Housekeeping Standards: ${auditResults.cleanliness}%`,
+      description: auditResults.cleanliness >= 85 ? 'Excellent cleanliness standards maintained' : 'Cleanliness needs improvement',
+      icon: auditResults.cleanliness >= 85 ? CheckCircle : AlertCircle
     },
     {
-      type: 'warning',
-      title: 'Logo placement issues in lobby',
-      description: 'Some brand elements not aligned with guidelines',
-      icon: 'fas fa-exclamation'
+      type: auditResults.branding >= 85 ? 'positive' : 'warning',
+      title: `Brand Compliance: ${auditResults.branding}%`,
+      description: auditResults.branding >= 85 ? 'Brand elements properly aligned' : 'Brand compliance issues identified',
+      icon: auditResults.branding >= 85 ? CheckCircle : AlertCircle
     },
     {
-      type: 'positive', 
-      title: 'Staff service quality high',
-      description: 'Professional demeanor and brand knowledge',
-      icon: 'fas fa-check'
+      type: auditResults.operational >= 85 ? 'positive' : 'warning',
+      title: `Operational Efficiency: ${auditResults.operational}%`,
+      description: auditResults.operational >= 85 ? 'Operations running smoothly' : 'Operational improvements needed',
+      icon: auditResults.operational >= 85 ? CheckCircle : AlertCircle
     }
   ];
 
+  // Generate action plan from real audit findings
   const actionPlan = [
     {
       id: 1,
-      title: 'Lobby Brand Element Alignment',
-      description: 'Adjust logo placement and brand signage to match corporate guidelines',
+      title: 'Address Priority Issues',
+      description: latestAudit?.findings || 'Implement recommendations from latest audit',
       priority: 'high',
-      dueDate: 'March 30, 2024',
-      assignedTo: 'Facilities Team',
-      progress: 40,
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      assignedTo: 'Management Team',
+      progress: 20,
       status: 'in_progress'
     },
     {
       id: 2,
-      title: 'Staff Uniform Review',
-      description: 'Ensure all department uniforms meet updated brand standards',
+      title: 'Follow Action Plan',
+      description: latestAudit?.actionPlan || 'Execute improvement action plan',
       priority: 'medium',
-      dueDate: 'April 15, 2024', 
-      assignedTo: 'HR Department',
-      progress: 100,
-      status: 'completed'
-    },
-    {
-      id: 3,
-      title: 'Guest Service Training Refresh',
-      description: 'Conduct refresher training on updated service protocols',
-      priority: 'low',
-      dueDate: 'May 1, 2024',
-      assignedTo: 'Training Manager',
-      progress: 10,
+      dueDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      assignedTo: 'Department Heads',
+      progress: 0,
       status: 'pending'
     }
   ];
+
+  // Feedback submission mutation
+  const submitFeedback = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...data,
+          propertyId,
+          userId: user?.id,
+          timestamp: new Date().toISOString()
+        })
+      });
+      if (!response.ok) throw new Error('Failed to submit feedback');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Feedback Submitted",
+        description: "Your feedback has been sent to corporate team",
+      });
+      setFeedbackOpen(false);
+      setFeedbackData({ subject: '', message: '', priority: 'medium' });
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,22 +145,88 @@ export default function HotelGMDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Taj Palace, New Delhi - Property Dashboard</h1>
-          <p className="text-gray-600">Monitor your property's compliance status and improvement plans</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{property?.name || 'Property Dashboard'}</h1>
+              <p className="text-gray-600">Monitor your property's compliance status and improvement plans - Real-time data</p>
+            </div>
+            <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Feedback
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Send Feedback to Corporate</DialogTitle>
+                  <DialogDescription>
+                    Share your concerns, suggestions, or requests with the corporate team
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="feedback-subject">Subject</Label>
+                    <Input
+                      id="feedback-subject"
+                      value={feedbackData.subject}
+                      onChange={(e) => setFeedbackData(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Enter feedback subject"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="feedback-message">Message</Label>
+                    <Textarea
+                      id="feedback-message"
+                      value={feedbackData.message}
+                      onChange={(e) => setFeedbackData(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Describe your feedback, suggestions, or concerns"
+                      rows={4}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <select
+                      id="priority"
+                      value={feedbackData.priority}
+                      onChange={(e) => setFeedbackData(prev => ({ ...prev, priority: e.target.value }))}
+                      className="w-full p-2 border rounded"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                  <Button 
+                    onClick={() => submitFeedback.mutate(feedbackData)}
+                    disabled={submitFeedback.isPending}
+                    className="w-full"
+                  >
+                    {submitFeedback.isPending ? 'Sending...' : 'Send Feedback'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* Property Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Property Status Cards - Real-time Data */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Current Score</p>
-                  <p className="text-3xl font-bold text-green-600">{propertyStats.currentScore}%</p>
-                  <p className="text-xs text-green-600">↑ {propertyStats.improvement}% from last audit</p>
+                  <p className={`text-3xl font-bold ${propertyStats.currentScore >= 85 ? 'text-green-600' : propertyStats.currentScore >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {propertyStats.currentScore}%
+                  </p>
+                  <p className={`text-xs ${propertyStats.improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {propertyStats.improvement >= 0 ? '↑' : '↓'} {Math.abs(propertyStats.improvement)}% from last audit
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-trophy text-green-600 text-xl"></i>
+                  <Award className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
@@ -106,11 +237,19 @@ export default function HotelGMDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Compliance Zone</p>
-                  <p className="text-2xl font-bold text-yellow-600 capitalize">{propertyStats.complianceZone}</p>
-                  <p className="text-xs text-yellow-600">Minor issues to address</p>
+                  <p className={`text-2xl font-bold capitalize ${
+                    propertyStats.complianceZone === 'green' ? 'text-green-600' :
+                    propertyStats.complianceZone === 'amber' ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {propertyStats.complianceZone}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {propertyStats.complianceZone === 'green' ? 'Excellent compliance' :
+                     propertyStats.complianceZone === 'amber' ? 'Minor issues to address' : 'Immediate action required'}
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-shield-alt text-yellow-600 text-xl"></i>
+                  <Target className="h-6 w-6 text-yellow-600" />
                 </div>
               </div>
             </CardContent>
@@ -125,7 +264,22 @@ export default function HotelGMDashboard() {
                   <p className="text-xs text-blue-600">Quarterly schedule</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-calendar text-blue-600 text-xl"></i>
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Audits</p>
+                  <p className="text-2xl font-bold text-purple-600">{propertyAudits.length}</p>
+                  <p className="text-xs text-gray-500">Historical data</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>

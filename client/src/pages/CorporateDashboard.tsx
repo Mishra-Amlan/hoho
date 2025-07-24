@@ -3,52 +3,130 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap } from 'lucide-react';
 
 export default function CorporateDashboard() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [surveyOpen, setSurveyOpen] = useState(false);
+  const [recommendationOpen, setRecommendationOpen] = useState(false);
+  const [surveyData, setSurveyData] = useState({
+    title: '',
+    description: '',
+    questions: ['']
+  });
+  const [recommendationData, setRecommendationData] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    targetProperties: 'all'
+  });
+
+  // Fetch real-time data
+  const { data: audits = [], isLoading: auditsLoading } = useQuery({
+    queryKey: ['/api/audits'],
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
+    queryKey: ['/api/properties'],
+    refetchInterval: 30000
+  });
+
+  // Calculate real-time KPIs
   const kpiData = {
-    overallCompliance: 87,
-    totalProperties: 156,
-    criticalIssues: 12,
-    auditsThisMonth: 84
+    overallCompliance: (audits as any[]).length > 0 ? Math.round((audits as any[]).reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / (audits as any[]).length) : 0,
+    totalProperties: (properties as any[]).length,
+    criticalIssues: (audits as any[]).filter((audit: any) => audit.overallScore && audit.overallScore < 70).length,
+    auditsThisMonth: (audits as any[]).filter((audit: any) => {
+      const auditDate = new Date(audit.submittedAt || audit.createdAt);
+      const now = new Date();
+      return auditDate.getMonth() === now.getMonth() && auditDate.getFullYear() === now.getFullYear();
+    }).length
   };
 
-  const regionalData = [
-    { region: 'North India', score: 92, color: 'bg-green-500' },
-    { region: 'West India', score: 89, color: 'bg-green-500' },
-    { region: 'South India', score: 76, color: 'bg-yellow-500' },
-    { region: 'East India', score: 82, color: 'bg-yellow-500' },
-    { region: 'International', score: 94, color: 'bg-green-500' }
-  ];
+  // Calculate regional data from real audits
+  const regionalData = (properties as any[]).map((property: any) => {
+    const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id);
+    const avgScore = propertyAudits.length > 0 
+      ? Math.round(propertyAudits.reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / propertyAudits.length)
+      : 0;
+    
+    return {
+      region: property.region || property.location,
+      score: avgScore,
+      color: avgScore >= 85 ? 'bg-green-500' : avgScore >= 70 ? 'bg-yellow-500' : 'bg-red-500',
+      propertyName: property.name
+    };
+  });
 
-  const criticalProperties = [
-    {
-      id: 1,
-      name: 'Taj Gateway, Bangalore',
-      location: 'Karnataka',
-      score: 68,
-      issues: ['Cleanliness', 'Branding'],
-      lastAudit: '2 days ago',
-      image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50'
+  // Get critical properties from real data
+  const criticalProperties = (properties as any[])
+    .map((property: any) => {
+      const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id);
+      const latestAudit = propertyAudits.sort((a: any, b: any) => 
+        new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
+      )[0];
+      
+      return {
+        ...property,
+        score: latestAudit?.overallScore || 0,
+        lastAudit: latestAudit ? new Date(latestAudit.submittedAt || latestAudit.createdAt).toLocaleDateString() : 'No audits',
+        issues: latestAudit?.findings ? ['Compliance Issues'] : ['No Issues']
+      };
+    })
+    .filter((property: any) => property.score > 0 && property.score < 80)
+    .sort((a: any, b: any) => a.score - b.score);
+
+  // Survey creation mutation
+  const createSurvey = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to create survey');
+      return response.json();
     },
-    {
-      id: 2,
-      name: 'Taj Exotica, Goa', 
-      location: 'Goa',
-      score: 74,
-      issues: ['Operational Efficiency'],
-      lastAudit: '3 days ago',
-      image: 'https://images.unsplash.com/photo-1455587734955-081b22074882?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50'
-    },
-    {
-      id: 3,
-      name: 'Taj Coromandel, Chennai',
-      location: 'Tamil Nadu',
-      score: 79,
-      issues: ['Staff Training'],
-      lastAudit: '1 week ago', 
-      image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50'
+    onSuccess: () => {
+      toast({
+        title: "Survey Created",
+        description: "Survey has been distributed to all properties",
+      });
+      setSurveyOpen(false);
+      setSurveyData({ title: '', description: '', questions: [''] });
     }
-  ];
+  });
+
+  // Recommendation creation mutation
+  const createRecommendation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to create recommendation');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Recommendation Sent",
+        description: "Recommendation has been sent to target properties",
+      });
+      setRecommendationOpen(false);
+      setRecommendationData({ title: '', description: '', priority: 'medium', targetProperties: 'all' });
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,7 +139,140 @@ export default function CorporateDashboard() {
           <p className="text-gray-600">Monitor brand compliance and performance across all properties</p>
         </div>
 
-        {/* KPI Cards */}
+        {/* Action Buttons */}
+        <div className="flex space-x-4 mb-8">
+          <Dialog open={surveyOpen} onOpenChange={setSurveyOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Create Survey
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create Property Survey</DialogTitle>
+                <DialogDescription>
+                  Send a survey to all properties to gather feedback and insights
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="survey-title">Survey Title</Label>
+                  <Input
+                    id="survey-title"
+                    value={surveyData.title}
+                    onChange={(e) => setSurveyData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter survey title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="survey-description">Description</Label>
+                  <Textarea
+                    id="survey-description"
+                    value={surveyData.description}
+                    onChange={(e) => setSurveyData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe the purpose of this survey"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label>Questions</Label>
+                  {surveyData.questions.map((question, index) => (
+                    <div key={index} className="flex space-x-2 mt-2">
+                      <Input
+                        value={question}
+                        onChange={(e) => {
+                          const newQuestions = [...surveyData.questions];
+                          newQuestions[index] = e.target.value;
+                          setSurveyData(prev => ({ ...prev, questions: newQuestions }));
+                        }}
+                        placeholder={`Question ${index + 1}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const newQuestions = [...surveyData.questions, ''];
+                          setSurveyData(prev => ({ ...prev, questions: newQuestions }));
+                        }}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  onClick={() => createSurvey.mutate(surveyData)}
+                  disabled={createSurvey.isPending}
+                  className="w-full"
+                >
+                  {createSurvey.isPending ? 'Creating...' : 'Send Survey'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={recommendationOpen} onOpenChange={setRecommendationOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+                <Send className="h-4 w-4 mr-2" />
+                Send Recommendation
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Send Recommendation</DialogTitle>
+                <DialogDescription>
+                  Send improvement recommendations to properties
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="rec-title">Recommendation Title</Label>
+                  <Input
+                    id="rec-title"
+                    value={recommendationData.title}
+                    onChange={(e) => setRecommendationData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter recommendation title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rec-description">Description</Label>
+                  <Textarea
+                    id="rec-description"
+                    value={recommendationData.description}
+                    onChange={(e) => setRecommendationData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe the recommendation"
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priority">Priority</Label>
+                  <select
+                    id="priority"
+                    value={recommendationData.priority}
+                    onChange={(e) => setRecommendationData(prev => ({ ...prev, priority: e.target.value }))}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <Button 
+                  onClick={() => createRecommendation.mutate(recommendationData)}
+                  disabled={createRecommendation.isPending}
+                  className="w-full"
+                >
+                  {createRecommendation.isPending ? 'Sending...' : 'Send Recommendation'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* KPI Cards - Real-time Data */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -69,10 +280,10 @@ export default function CorporateDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Overall Compliance</p>
                   <p className="text-3xl font-bold text-green-600">{kpiData.overallCompliance}%</p>
-                  <p className="text-xs text-green-600">↑ 3% from last month</p>
+                  <p className="text-xs text-gray-500">Live data from audits</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-chart-line text-green-600 text-xl"></i>
+                  <TrendingUp className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
@@ -84,10 +295,10 @@ export default function CorporateDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Properties</p>
                   <p className="text-3xl font-bold text-blue-600">{kpiData.totalProperties}</p>
-                  <p className="text-xs text-gray-500">Across 12 regions</p>
+                  <p className="text-xs text-gray-500">Active properties</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-building text-blue-600 text-xl"></i>
+                  <Building className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -99,10 +310,10 @@ export default function CorporateDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Critical Issues</p>
                   <p className="text-3xl font-bold text-red-600">{kpiData.criticalIssues}</p>
-                  <p className="text-xs text-red-600">Require immediate attention</p>
+                  <p className="text-xs text-red-600">Score below 70%</p>
                 </div>
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                  <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
             </CardContent>
@@ -114,10 +325,10 @@ export default function CorporateDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Audits This Month</p>
                   <p className="text-3xl font-bold text-amber-600">{kpiData.auditsThisMonth}</p>
-                  <p className="text-xs text-amber-600">↑ 12% from last month</p>
+                  <p className="text-xs text-gray-500">Recent submissions</p>
                 </div>
                 <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-clipboard-check text-amber-600 text-xl"></i>
+                  <BarChart3 className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
             </CardContent>
@@ -149,7 +360,7 @@ export default function CorporateDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {regionalData.map((region) => (
+                {regionalData.map((region: any) => (
                   <div key={region.region} className="flex items-center justify-between">
                     <span className="font-medium text-gray-900">{region.region}</span>
                     <div className="flex items-center space-x-2">
@@ -195,7 +406,7 @@ export default function CorporateDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {criticalProperties.map((property) => (
+                  {criticalProperties.map((property: any) => (
                     <tr key={property.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

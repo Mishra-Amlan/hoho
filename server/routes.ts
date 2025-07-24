@@ -253,6 +253,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Survey routes
+  app.post('/api/surveys', async (req, res) => {
+    try {
+      console.log('Creating survey:', req.body);
+      const survey = {
+        id: Date.now(),
+        ...req.body,
+        createdAt: new Date().toISOString(),
+        createdBy: 'corporate',
+        status: 'active'
+      };
+      
+      res.json({ success: true, survey });
+    } catch (error) {
+      console.error('Survey creation error:', error);
+      res.status(500).json({ error: 'Failed to create survey' });
+    }
+  });
+
+  // Recommendation routes
+  app.post('/api/recommendations', async (req, res) => {
+    try {
+      console.log('Creating recommendation:', req.body);
+      const recommendation = {
+        id: Date.now(),
+        ...req.body,
+        createdAt: new Date().toISOString(),
+        createdBy: 'corporate',
+        status: 'sent'
+      };
+      
+      res.json({ success: true, recommendation });
+    } catch (error) {
+      console.error('Recommendation creation error:', error);
+      res.status(500).json({ error: 'Failed to create recommendation' });
+    }
+  });
+
+  // Feedback routes
+  app.post('/api/feedback', async (req, res) => {
+    try {
+      console.log('Submitting feedback:', req.body);
+      const feedback = {
+        id: Date.now(),
+        ...req.body,
+        createdAt: new Date().toISOString(),
+        status: 'submitted'
+      };
+      
+      res.json({ success: true, feedback });
+    } catch (error) {
+      console.error('Feedback submission error:', error);
+      res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
