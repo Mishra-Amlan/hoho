@@ -34,6 +34,8 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState('audits');
+  const [auditFilter, setAuditFilter] = useState<string>('all');
 
   // Data fetching hooks
   const { data: properties = [], isLoading: propertiesLoading } = useProperties();
@@ -154,6 +156,28 @@ export default function AdminDashboard() {
   const getReviewerName = (reviewerId: number) => {
     const reviewer = reviewers.find((r: any) => r.id === reviewerId);
     return reviewer ? reviewer.name : 'Unknown Reviewer';
+  };
+
+  // Handle tile clicks to filter data
+  const handleTileClick = (filterType: string) => {
+    setAuditFilter(filterType);
+    setActiveTab('audits');
+  };
+
+  // Filter audits based on current filter
+  const getFilteredAudits = () => {
+    switch (auditFilter) {
+      case 'pending':
+        return audits.filter((audit: any) => audit.status === 'scheduled' || audit.status === 'in_progress');
+      case 'submitted':
+        return audits.filter((audit: any) => audit.status === 'submitted');
+      case 'completed':
+        return audits.filter((audit: any) => audit.status === 'approved');
+      case 'rejected':
+        return audits.filter((audit: any) => audit.status === 'needs_revision');
+      default:
+        return audits;
+    }
   };
 
   return (
@@ -362,61 +386,81 @@ export default function AdminDashboard() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => setActiveTab('properties')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Building className="h-8 w-8 text-blue-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Properties</p>
                   <p className="text-2xl font-bold text-gray-900">{totalProperties}</p>
+                  <p className="text-xs text-blue-600 mt-1">View all properties →</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => handleTileClick('pending')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Clock className="h-8 w-8 text-yellow-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Pending Audits</p>
                   <p className="text-2xl font-bold text-gray-900">{pendingAudits}</p>
+                  <p className="text-xs text-yellow-600 mt-1">View pending →</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => handleTileClick('submitted')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Eye className="h-8 w-8 text-purple-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Awaiting Review</p>
                   <p className="text-2xl font-bold text-gray-900">{submittedAudits}</p>
+                  <p className="text-xs text-purple-600 mt-1">View submitted →</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => handleTileClick('completed')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Completed</p>
                   <p className="text-2xl font-bold text-gray-900">{completedAudits}</p>
+                  <p className="text-xs text-green-600 mt-1">View completed →</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={() => handleTileClick('rejected')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center">
                 <XCircle className="h-8 w-8 text-red-500 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-gray-600">Need Revision</p>
                   <p className="text-2xl font-bold text-gray-900">{rejectedAudits}</p>
+                  <p className="text-xs text-red-600 mt-1">View rejected →</p>
                 </div>
               </div>
             </CardContent>
@@ -424,7 +468,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="audits" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="audits">Audit Management</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
@@ -434,14 +478,51 @@ export default function AdminDashboard() {
           <TabsContent value="audits" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Audits</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>
+                    {auditFilter === 'all' ? 'All Audits' : 
+                     auditFilter === 'pending' ? 'Pending Audits' :
+                     auditFilter === 'submitted' ? 'Submitted Audits' :
+                     auditFilter === 'completed' ? 'Completed Audits' :
+                     auditFilter === 'rejected' ? 'Audits Needing Revision' : 'Recent Audits'}
+                  </CardTitle>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant={auditFilter === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAuditFilter('all')}
+                    >
+                      All ({audits.length})
+                    </Button>
+                    <Button
+                      variant={auditFilter === 'pending' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAuditFilter('pending')}
+                    >
+                      Pending ({pendingAudits})
+                    </Button>
+                    <Button
+                      variant={auditFilter === 'submitted' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAuditFilter('submitted')}
+                    >
+                      Submitted ({submittedAudits})
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {audits.length === 0 ? (
+                {getFilteredAudits().length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No audits scheduled yet</p>
-                    <p className="text-sm text-gray-500">Create your first audit using the "Schedule Audit" button</p>
+                    <p className="text-gray-600">
+                      {auditFilter === 'all' ? 'No audits scheduled yet' : 
+                       `No ${auditFilter} audits`}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {auditFilter === 'all' ? 'Create your first audit using the "Schedule Audit" button' :
+                       'Try changing the filter or create new audits'}
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -457,7 +538,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {audits.slice(0, 10).map((audit: any) => (
+                        {getFilteredAudits().slice(0, 10).map((audit: any) => (
                           <tr key={audit.id} className="border-b hover:bg-gray-50">
                             <td className="p-3 font-medium">{getPropertyName(audit.propertyId)}</td>
                             <td className="p-3">{getAuditorName(audit.auditorId)}</td>
@@ -498,11 +579,11 @@ export default function AdminDashboard() {
                     )[0];
 
                     return (
-                      <Card key={property.id} className="hover:shadow-lg transition-shadow">
+                      <Card key={property.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                              <h3 className="font-semibold text-lg text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
                                 {property.name}
                               </h3>
                               <p className="text-sm text-gray-600 mb-2">{property.location}</p>
@@ -530,6 +611,33 @@ export default function AdminDashboard() {
                                  <Badge variant="outline" className="text-xs">No Audits</Badge>}
                               </span>
                             </div>
+                          </div>
+                          
+                          <div className="mt-4 pt-4 border-t flex space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAuditFilter('all');
+                                setActiveTab('audits');
+                                // You could add more specific filtering for this property here
+                              }}
+                            >
+                              View Audits ({propertyAudits.length})
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                form.setValue('propertyId', property.id.toString());
+                                setShowScheduleModal(true);
+                              }}
+                            >
+                              Schedule Audit
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
