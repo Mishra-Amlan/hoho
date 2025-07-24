@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,53 +9,126 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { HOTEL_AUDIT_CHECKLIST } from '@shared/auditChecklist';
+import { useAudits, useUpdateAudit, useAuditItems } from '@/hooks/use-api';
+import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Eye, MessageSquare } from 'lucide-react';
 
 export default function ReviewerDashboard() {
-  const [reviewQueue] = useState([
-    {
-      id: 1,
-      property: 'Taj Palace, New Delhi',
-      auditor: 'Sarah Johnson',
-      submittedAt: '2 hours ago',
-      aiScore: 85,
-      aiFlags: ['Branding'],
-      image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100',
-      status: 'high_priority'
-    },
-    {
-      id: 2,
-      property: 'Taj Mahal, Mumbai', 
-      auditor: 'Mike Chen',
-      submittedAt: '4 hours ago',
-      aiScore: 92,
-      aiFlags: [],
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100',
-      status: 'normal'
-    },
-    {
-      id: 3,
-      property: 'Taj Lake Palace, Udaipur',
-      auditor: 'Lisa Thompson',
-      submittedAt: '6 hours ago',
-      aiScore: 68,
-      aiFlags: ['Critical Issues'],
-      image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100',
-      status: 'critical'
-    }
-  ]);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [selectedAuditId, setSelectedAuditId] = useState<number | null>(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>({});
 
-  const [selectedReview] = useState({
-    property: 'Taj Palace, New Delhi',
-    overallScore: 85,
-    scores: {
-      cleanliness: 92,
-      branding: 78,
-      operational: 88
-    },
-    aiInsights: [
-      '⚠️ Logo placement inconsistency detected in lobby area. Recommend brand guideline review.'
-    ]
-  });
+  // Fetch audits assigned to this reviewer that are submitted
+  const { data: allAudits = [], isLoading } = useAudits({ reviewerId: user?.id });
+  const updateAudit = useUpdateAudit();
+  
+  // Filter audits that are submitted and awaiting review
+  const pendingAudits = allAudits.filter((audit: any) => audit.status === 'submitted');
+  const selectedAudit = selectedAuditId ? allAudits.find((audit: any) => audit.id === selectedAuditId) : pendingAudits[0];
+  
+  // Fetch audit items for selected audit
+  const { data: auditItems = [] } = useAuditItems(selectedAudit?.id);
+
+  const handleApproveAudit = async () => {
+    if (!selectedAudit) return;
+    
+    try {
+      await updateAudit.mutateAsync({
+        id: selectedAudit.id,
+        status: 'approved',
+        reviewedAt: new Date().toISOString(),
+        // Add any score overrides or review notes here
+        ...(reviewNotes && { findings: reviewNotes })
+      });
+      
+      toast({
+        title: "Audit Approved",
+        description: "The audit has been approved and marked as complete.",
+      });
+      
+      // Reset selection to next pending audit
+      setSelectedAuditId(null);
+      setReviewNotes('');
+      setScoreOverrides({});
+    } catch (error) {
+      console.error('Approval error:', error);
+      toast({
+        title: "Approval Failed",
+        description: "Unable to approve audit. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRejectAudit = async () => {
+    if (!selectedAudit) return;
+    
+    try {
+      await updateAudit.mutateAsync({
+        id: selectedAudit.id,
+        status: 'needs_revision',
+        reviewedAt: new Date().toISOString(),
+        findings: reviewNotes || 'Audit requires revision before approval'
+      });
+      
+      toast({
+        title: "Audit Rejected",
+        description: "The audit has been sent back for revision.",
+      });
+      
+      // Reset selection
+      setSelectedAuditId(null);
+      setReviewNotes('');
+      setScoreOverrides({});
+    } catch (error) {
+      console.error('Rejection error:', error);
+      toast({
+        title: "Rejection Failed",
+        description: "Unable to reject audit. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'submitted':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending Review</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
+      case 'needs_revision':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Needs Revision</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPriorityIcon = (audit: any) => {
+    // Simple priority logic - can be enhanced with AI analysis
+    if (audit.overallScore && audit.overallScore < 70) {
+      return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    } else if (audit.overallScore && audit.overallScore < 85) {
+      return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
+    return <CheckCircle className="h-4 w-4 text-green-500" />;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,164 +137,300 @@ export default function ReviewerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Queue</h1>
-          <p className="text-gray-600">Validate audit reports and AI-generated scores</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">Review Queue</h1>
+          <p className="text-gray-700 text-lg">Validate audit reports and AI-generated scores</p>
         </div>
 
-        {/* Review Queue */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Pending Reviews</CardTitle>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">All</Button>
-                <Button size="sm" className="bg-purple-500 hover:bg-purple-600">High Priority</Button>
-                <Button variant="outline" size="sm">AI Flagged</Button>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-yellow-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
+                  <p className="text-2xl font-bold text-gray-900">{pendingAudits.length}</p>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {reviewQueue.map((item) => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <img 
-                        src={item.image}
-                        alt={item.property}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{item.property}</h3>
-                        <p className="text-sm text-gray-600">Submitted by: {item.auditor}</p>
-                        <p className="text-xs text-gray-500">{item.submittedAt}</p>
-                        <div className="flex space-x-2 mt-2">
-                          <Badge 
-                            variant={item.aiScore >= 85 ? "default" : item.aiScore >= 75 ? "secondary" : "destructive"}
-                            className={item.aiScore >= 85 ? "bg-green-100 text-green-800" : 
-                                     item.aiScore >= 75 ? "bg-yellow-100 text-yellow-800" : 
-                                     "bg-red-100 text-red-800"}
-                          >
-                            AI Score: {item.aiScore}%
-                          </Badge>
-                          {item.aiFlags.length > 0 ? (
-                            <Badge variant="destructive" className="bg-yellow-100 text-yellow-800">
-                              AI Flagged: {item.aiFlags.join(', ')}
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-green-100 text-green-800">No Issues</Badge>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Approved Today</p>
+                  <p className="text-2xl font-bold text-gray-900">{allAudits.filter((a: any) => a.status === 'approved').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Critical Issues</p>
+                  <p className="text-2xl font-bold text-gray-900">{allAudits.filter((a: any) => a.overallScore && a.overallScore < 70).length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Eye className="h-8 w-8 text-blue-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Audits</p>
+                  <p className="text-2xl font-bold text-gray-900">{allAudits.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Review Queue */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingAudits.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-gray-600">No pending reviews</p>
+                    <p className="text-sm text-gray-500">All audits are up to date!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingAudits.map((audit: any) => (
+                      <div
+                        key={audit.id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                          selectedAudit?.id === audit.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => setSelectedAuditId(audit.id)}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            {getPriorityIcon(audit)}
+                            <h4 className="font-semibold text-gray-900">Property ID {audit.propertyId}</h4>
+                          </div>
+                          {getStatusBadge(audit.status)}
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>Auditor: {audit.auditorId === 2 ? 'Sarah Johnson' : 'Unknown Auditor'}</p>
+                          <p>Submitted: {audit.submittedAt ? new Date(audit.submittedAt).toLocaleDateString() : 'Recently'}</p>
+                          {audit.overallScore && (
+                            <p>AI Score: <span className="font-semibold">{audit.overallScore}/100</span></p>
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button className="bg-purple-500 hover:bg-purple-600">Review</Button>
-                      <Button variant="outline">Quick Approve</Button>
-                    </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Detailed Review Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Review: {selectedReview.property}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* AI Analysis */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Results</h3>
-                <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900">Overall Score</span>
-                      <span className="text-2xl font-bold text-green-600">{selectedReview.overallScore}%</span>
-                    </div>
-                    <Progress value={selectedReview.overallScore} className="h-3" />
+          {/* Review Details */}
+          <div className="lg:col-span-2">
+            {selectedAudit ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Review Details - Property ID {selectedAudit.propertyId}</CardTitle>
+                    {getStatusBadge(selectedAudit.status)}
                   </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Cleanliness & Hygiene</span>
-                      <span className="font-semibold text-green-600">{selectedReview.scores.cleanliness}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Branding Compliance</span>
-                      <span className="font-semibold text-yellow-600">{selectedReview.scores.branding}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Operational Efficiency</span>
-                      <span className="font-semibold text-green-600">{selectedReview.scores.operational}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <h4 className="font-medium text-gray-900 mb-2">AI-Generated Insights</h4>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      {selectedReview.aiInsights.map((insight, index) => (
-                        <p key={index} className="text-sm text-yellow-800">{insight}</p>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="checklist" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="checklist">Audit Checklist</TabsTrigger>
+                      <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
+                      <TabsTrigger value="review">Review & Approve</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="checklist" className="space-y-6 mt-6">
+                      <div className="text-sm text-gray-600 mb-4">
+                        Review the auditor's observations and evidence collected for each checklist item.
+                      </div>
+                      
+                      {HOTEL_AUDIT_CHECKLIST.map((category) => (
+                        <div key={category.id} className="border rounded-lg p-4">
+                          <h3 className="font-semibold text-lg mb-4">{category.name}</h3>
+                          <div className="space-y-4">
+                            {category.items.map((item) => {
+                              const auditItem = auditItems.find((ai: any) => ai.category === category.name && ai.item.includes(item.item.split(' ')[0]));
+                              
+                              return (
+                                <div key={item.id} className="border-l-4 border-gray-200 pl-4">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium text-gray-900">{item.item}</h4>
+                                      <p className="text-sm text-gray-600">{item.description}</p>
+                                    </div>
+                                    <div className="ml-4 text-right">
+                                      <div className="text-sm text-gray-500">Weight: {item.weight}</div>
+                                      {auditItem?.score && (
+                                        <div className="text-lg font-semibold text-blue-600">
+                                          {auditItem.score}/{item.maxScore}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {auditItem?.comments && (
+                                    <div className="mt-2 p-3 bg-gray-50 rounded">
+                                      <p className="text-sm text-gray-700">
+                                        <MessageSquare className="h-4 w-4 inline mr-1" />
+                                        <strong>Auditor Notes:</strong> {auditItem.comments}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  {!auditItem && (
+                                    <div className="mt-2 p-3 bg-yellow-50 rounded">
+                                      <p className="text-sm text-yellow-700">No auditor data collected for this item</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Review Actions */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Actions</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Override Overall Score</label>
-                    <Input 
-                      type="number" 
-                      defaultValue={selectedReview.overallScore} 
-                      min="0" 
-                      max="100" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Zone</label>
-                    <Select defaultValue="amber">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="green">Green - Compliant</SelectItem>
-                        <SelectItem value="amber">Amber - Minor Issues</SelectItem>
-                        <SelectItem value="red">Red - Critical Issues</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reviewer Comments</label>
-                    <Textarea 
-                      rows={4} 
-                      placeholder="Add your review comments..."
-                    />
-                  </div>
-                  
-                  <div className="flex space-x-3 pt-4">
-                    <Button variant="destructive" className="flex-1">
-                      <i className="fas fa-times mr-2"></i>Reject
-                    </Button>
-                    <Button variant="outline" className="flex-1">
-                      <i className="fas fa-edit mr-2"></i>Request Changes
-                    </Button>
-                    <Button className="flex-1 bg-purple-500 hover:bg-purple-600">
-                      <i className="fas fa-check mr-2"></i>Approve & Submit
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                    </TabsContent>
+                    
+                    <TabsContent value="ai-analysis" className="space-y-6 mt-6">
+                      <div className="p-6 bg-blue-50 rounded-lg">
+                        <h3 className="font-semibold text-lg mb-4 text-blue-800">AI Analysis Results</h3>
+                        
+                        {selectedAudit.overallScore ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-blue-700">Overall Score:</span>
+                              <span className="text-2xl font-bold text-blue-800">{selectedAudit.overallScore}/100</span>
+                            </div>
+                            
+                            <Progress value={selectedAudit.overallScore} className="h-3" />
+                            
+                            <div className="grid grid-cols-3 gap-4 mt-6">
+                              <div className="text-center">
+                                <div className="text-lg font-semibold text-gray-800">
+                                  {selectedAudit.cleanlinessScore || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-600">Cleanliness</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-semibold text-gray-800">
+                                  {selectedAudit.brandingScore || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-600">Branding</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-lg font-semibold text-gray-800">
+                                  {selectedAudit.operationalScore || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-600">Operations</div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                            <p className="text-yellow-700 font-medium">AI Analysis Pending</p>
+                            <p className="text-sm text-yellow-600">The AI system is processing this audit. Scores will be available shortly.</p>
+                          </div>
+                        )}
+                        
+                        {selectedAudit.findings && (
+                          <div className="mt-6 p-4 bg-white rounded border">
+                            <h4 className="font-medium text-gray-900 mb-2">AI Insights & Recommendations</h4>
+                            <p className="text-gray-700">{selectedAudit.findings}</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="review" className="space-y-6 mt-6">
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Reviewer Notes & Comments
+                          </label>
+                          <Textarea
+                            rows={4}
+                            value={reviewNotes}
+                            onChange={(e) => setReviewNotes(e.target.value)}
+                            placeholder="Add your review comments, recommendations, or any additional observations..."
+                            className="w-full"
+                          />
+                        </div>
+                        
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                          <h4 className="font-medium text-gray-900 mb-3">Score Override (Optional)</h4>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Only override AI scores if you have specific reasons. Document your reasoning in the notes above.
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-gray-700 mb-1">Overall Score Override</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                placeholder="Leave blank to keep AI score"
+                                value={scoreOverrides.overall || ''}
+                                onChange={(e) => setScoreOverrides(prev => ({ ...prev, overall: parseInt(e.target.value) || 0 }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-4 pt-6 border-t">
+                          <Button
+                            onClick={handleRejectAudit}
+                            variant="outline"
+                            className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                            disabled={updateAudit.isPending}
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            {updateAudit.isPending ? 'Processing...' : 'Reject & Send Back'}
+                          </Button>
+                          
+                          <Button
+                            onClick={handleApproveAudit}
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            disabled={updateAudit.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {updateAudit.isPending ? 'Processing...' : 'Approve Audit'}
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Eye className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Select an Audit to Review</h3>
+                  <p className="text-gray-600">Choose an audit from the queue to begin your review</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

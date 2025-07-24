@@ -50,7 +50,35 @@ export default function AuditorDashboard() {
   const handleSubmitForReview = async () => {
     if (!currentAudit) return;
     
+    // Save current audit data to audit items before submitting
+    const auditItemPromises = Object.entries(itemData).map(async ([itemId, data]) => {
+      const checklistItem = HOTEL_AUDIT_CHECKLIST
+        .flatMap(cat => cat.items)
+        .find(item => item.id === itemId);
+      
+      if (checklistItem && (data.comments.trim() !== '' || data.media.length > 0)) {
+        // Create or update audit item
+        return fetch(`/api/audits/${currentAudit.id}/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: HOTEL_AUDIT_CHECKLIST.find(cat => cat.items.some(i => i.id === itemId))?.name || 'General',
+            item: checklistItem.item,
+            description: checklistItem.description,
+            comments: data.comments,
+            mediaAttachments: data.media,
+            weight: checklistItem.weight,
+            maxScore: checklistItem.maxScore
+          })
+        });
+      }
+    });
+    
     try {
+      // Wait for all audit items to be saved
+      await Promise.all(auditItemPromises.filter(Boolean));
+      
+      // Then submit the audit for review
       await updateAudit.mutateAsync({
         id: currentAudit.id,
         status: 'submitted',

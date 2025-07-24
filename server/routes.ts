@@ -152,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(item);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update audit item" });
+      res.status(500).json({ message: "Failed to update audit item", error: (error as Error).message });
     }
   });
 
