@@ -1,34 +1,31 @@
-import { sqliteTable, text, integer, blob } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// For SQL Server compatibility, we'll use a more compatible schema
-// Note: You can switch back to PostgreSQL by changing imports and table definitions
-
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull(), // 'admin', 'auditor', 'reviewer', 'corporate', 'hotelgm'
   name: text("name").notNull(),
   email: text("email").notNull(),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const properties = sqliteTable("properties", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const properties = pgTable("properties", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   location: text("location").notNull(),
   region: text("region").notNull(),
   image: text("image"),
   lastAuditScore: integer("last_audit_score"),
-  nextAuditDate: text("next_audit_date"), // Using text for timestamp compatibility
+  nextAuditDate: timestamp("next_audit_date"),
   status: text("status").default('green'), // 'green', 'amber', 'red'
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const audits = sqliteTable("audits", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const audits = pgTable("audits", {
+  id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull().references(() => properties.id),
   auditorId: integer("auditor_id").references(() => users.id),
   reviewerId: integer("reviewer_id").references(() => users.id),
@@ -40,13 +37,13 @@ export const audits = sqliteTable("audits", {
   complianceZone: text("compliance_zone"), // 'green', 'amber', 'red'
   findings: text("findings"), // JSON as text
   actionPlan: text("action_plan"), // JSON as text
-  submittedAt: text("submitted_at"), // Using text for timestamp compatibility
-  reviewedAt: text("reviewed_at"), // Using text for timestamp compatibility
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  submittedAt: timestamp("submitted_at"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const auditItems = sqliteTable("audit_items", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const auditItems = pgTable("audit_items", {
+  id: serial("id").primaryKey(),
   auditId: integer("audit_id").notNull().references(() => audits.id),
   category: text("category").notNull(),
   item: text("item").notNull(),
