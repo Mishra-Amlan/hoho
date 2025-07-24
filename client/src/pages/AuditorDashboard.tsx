@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HOTEL_AUDIT_CHECKLIST, ChecklistItem } from '@shared/auditChecklist';
-import { useAudits, useUpdateAudit, useProperties } from '@/hooks/use-api';
+import { useAudits, useUpdateAudit, useProperties, useAuditItems } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Send, Camera, Video, MessageSquare, Clock, CheckCircle, Calendar, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ export default function AuditorDashboard() {
 
   const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
   const { data: properties = [] } = useProperties();
+  const { data: auditItems = [] } = useAuditItems(activeAudit?.id || 0);
   const updateAudit = useUpdateAudit();
   const currentAudit = audits.find((audit: any) => audit.status === 'in_progress') || audits[0];
   
@@ -322,6 +323,27 @@ export default function AuditorDashboard() {
     setSelectedChecklistItem(null);
   };
 
+  // Helper function to get audit item data for completed audits
+  const getAuditItemData = (checklistItemId: string): { comments: string; media: any[]; score?: number; status?: string } => {
+    if (activeAudit?.status === 'submitted' || activeAudit?.status === 'approved' || activeAudit?.status === 'needs_revision') {
+      // For completed audits, get data from database
+      const auditItem = auditItems.find((item: any) => 
+        item.item === HOTEL_AUDIT_CHECKLIST
+          .flatMap(cat => cat.items)
+          .find(ci => ci.id === checklistItemId)?.item
+      );
+      return auditItem ? {
+        comments: auditItem.comments || '',
+        media: auditItem.photos ? JSON.parse(auditItem.photos) : [],
+        score: auditItem.score,
+        status: auditItem.status
+      } : { comments: '', media: [], score: undefined, status: 'pending' };
+    } else {
+      // For in-progress audits, get from local state
+      return { ...getItemData(checklistItemId), score: undefined, status: undefined };
+    }
+  };
+
   // If showing checklist view
   if (showAuditChecklist && activeAudit) {
     return (
@@ -370,7 +392,7 @@ export default function AuditorDashboard() {
                     
                     {HOTEL_AUDIT_CHECKLIST.map((category) => {
                       const categoryCompleted = category.items.filter(item => {
-                        const data = getItemData(item.id);
+                        const data = getAuditItemData(item.id);
                         return data.comments.trim() !== '' || data.media.length > 0;
                       }).length;
                       const categoryProgress = category.items.length > 0 ? (categoryCompleted / category.items.length) * 100 : 0;
@@ -402,7 +424,7 @@ export default function AuditorDashboard() {
                     <span>{category.name}</span>
                     <span className="text-sm text-gray-500">
                       {category.items.filter(item => {
-                        const data = getItemData(item.id);
+                        const data = getAuditItemData(item.id);
                         return data.comments.trim() !== '' || data.media.length > 0;
                       }).length}/{category.items.length} completed
                     </span>
@@ -411,7 +433,7 @@ export default function AuditorDashboard() {
                 <CardContent>
                   <div className="space-y-6">
                     {category.items.map((item) => {
-                      const currentItemData = getItemData(item.id);
+                      const currentItemData = getAuditItemData(item.id);
                       return (
                         <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="mb-4">
@@ -425,11 +447,12 @@ export default function AuditorDashboard() {
                             </div>
                           </div>
                           
-                          {/* Media Upload Options */}
-                          <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Collection</label>
-                            <div className="flex gap-2 mb-3">
-                              {item.mediaTypes.includes('photo') && (
+                          {/* Media Upload Options - Only show for in-progress audits */}
+                          {(activeAudit?.status === 'scheduled' || activeAudit?.status === 'in_progress') && (
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Collection</label>
+                              <div className="flex gap-2 mb-3">
+                                {item.mediaTypes.includes('photo') && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -515,6 +538,7 @@ export default function AuditorDashboard() {
                               </div>
                             )}
                           </div>
+                          )}
 
                           {/* Comments */}
                           <div>
@@ -522,12 +546,34 @@ export default function AuditorDashboard() {
                               Auditor Observations & Comments
                               <span className="text-xs text-blue-600 ml-2">(Required for AI scoring)</span>
                             </label>
-                            <Textarea 
-                              rows={3} 
-                              value={currentItemData.comments}
-                              onChange={(e) => handleCommentsChange(item.id, e.target.value)}
-                              placeholder="Describe what you observed for this item. Be specific about compliance, cleanliness, staff behavior, etc. The AI will use these observations to generate an accurate score."
-                            />
+                            {activeAudit?.status === 'submitted' || activeAudit?.status === 'approved' || activeAudit?.status === 'needs_revision' ? (
+                              <div className="p-3 bg-gray-50 border rounded-md min-h-[80px]">
+                                {currentItemData.comments ? (
+                                  <p className="text-gray-700">{currentItemData.comments}</p>
+                                ) : (
+                                  <p className="text-gray-500 italic">No comments provided</p>
+                                )}
+                                {currentItemData.score && (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-blue-600">Score: {currentItemData.score}/5</span>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      currentItemData.score >= 4 ? 'bg-green-100 text-green-700' :
+                                      currentItemData.score >= 3 ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-red-100 text-red-700'
+                                    }`}>
+                                      {currentItemData.score >= 4 ? 'Good' : currentItemData.score >= 3 ? 'Fair' : 'Poor'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <Textarea 
+                                rows={3} 
+                                value={currentItemData.comments}
+                                onChange={(e) => handleCommentsChange(item.id, e.target.value)}
+                                placeholder="Describe what you observed for this item. Be specific about compliance, cleanliness, staff behavior, etc. The AI will use these observations to generate an accurate score."
+                              />
+                            )}
                           </div>
                         </div>
                       );
