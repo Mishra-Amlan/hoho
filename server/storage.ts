@@ -355,6 +355,7 @@ export class MemStorage implements IStorage {
       id,
       score: insertItem.score || null,
       comments: insertItem.comments || null,
+      aiAnalysis: null,
       photos: insertItem.photos || null,
       status: 'pending'
     };
