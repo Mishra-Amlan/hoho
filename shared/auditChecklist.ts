@@ -315,6 +315,74 @@ export const HOTEL_AUDIT_CHECKLIST: ChecklistCategory[] = [
         aiScoringCriteria: 'Assess local knowledge depth, recommendation quality, cultural insights, personalized suggestions'
       }
     ]
+  },
+  {
+    id: 'checkout-experience',
+    name: 'Check-Out Experience',
+    description: 'Final impression and departure process evaluation',
+    weight: 0.1,
+    items: [
+      {
+        id: 'billing-accuracy',
+        category: 'checkout-experience',
+        subcategory: 'billing',
+        item: 'Timely and Accurate Billing',
+        description: 'Efficient checkout process with accurate billing and no delays',
+        maxScore: 15,
+        weight: 0.9,
+        mediaTypes: ['photo', 'text'],
+        requiredMedia: ['text'],
+        aiScoringCriteria: 'Assess billing accuracy, checkout time (under 3 minutes), clarity of charges, resolution of any discrepancies'
+      },
+      {
+        id: 'farewell-gesture',
+        category: 'checkout-experience',
+        subcategory: 'hospitality',
+        item: 'Farewell Gesture and Appreciation',
+        description: 'Warm farewell with gratitude expression and safe travel wishes',
+        maxScore: 10,
+        weight: 0.8,
+        mediaTypes: ['video', 'text'],
+        requiredMedia: ['text'],
+        aiScoringCriteria: 'Evaluate warmth of farewell, gratitude expression, personal touch, cultural appropriateness of farewell'
+      },
+      {
+        id: 'loyalty-membership-offer',
+        category: 'checkout-experience',
+        subcategory: 'relationship-building',
+        item: 'Loyalty Membership or Future Booking Offer',
+        description: 'Proactive offering of loyalty program benefits and future stay opportunities',
+        maxScore: 10,
+        weight: 0.7,
+        mediaTypes: ['text', 'photo'],
+        requiredMedia: ['text'],
+        aiScoringCriteria: 'Assess proactive offering, benefit explanation clarity, enthusiasm in presentation, follow-up commitment'
+      },
+      {
+        id: 'luggage-departure-assistance',
+        category: 'checkout-experience',
+        subcategory: 'service',
+        item: 'Luggage and Transportation Assistance',
+        description: 'Assistance with luggage and transportation arrangements upon departure',
+        maxScore: 10,
+        weight: 0.6,
+        mediaTypes: ['photo', 'video', 'text'],
+        requiredMedia: ['text'],
+        aiScoringCriteria: 'Evaluate luggage handling care, transportation arrangement efficiency, staff proactiveness'
+      },
+      {
+        id: 'feedback-collection',
+        category: 'checkout-experience',
+        subcategory: 'improvement',
+        item: 'Guest Feedback Collection',
+        description: 'Solicitation of guest feedback and suggestions for future improvements',
+        maxScore: 5,
+        weight: 0.5,
+        mediaTypes: ['text'],
+        requiredMedia: ['text'],
+        aiScoringCriteria: 'Assess feedback solicitation approach, listening quality, note-taking, promise of follow-up action'
+      }
+    ]
   }
 ];
 
