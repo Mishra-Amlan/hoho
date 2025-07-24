@@ -132,6 +132,11 @@ export default function AuditorDashboard() {
         title: "Submitted for Review",
         description: "Your audit has been submitted for review successfully.",
       });
+      
+      // Reset state and go back to audit list
+      setActiveAudit(null);
+      setShowAuditChecklist(false);
+      setItemData({});
     } catch (error) {
       console.error('Submission error:', error);
       toast({
