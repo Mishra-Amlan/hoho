@@ -152,6 +152,24 @@ function generateFallbackAnalysis(auditItems: AuditItem[]): AIAnalysisResult {
   };
 }
 
+// Rate limiting for API calls
+let lastApiCall = 0;
+const API_RATE_LIMIT_MS = 6000; // 6 seconds between calls for free tier (10 calls per minute)
+
+async function rateLimitedApiCall<T>(apiCall: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const timeSinceLastCall = now - lastApiCall;
+  
+  if (timeSinceLastCall < API_RATE_LIMIT_MS) {
+    const waitTime = API_RATE_LIMIT_MS - timeSinceLastCall;
+    console.log(`Rate limiting: waiting ${waitTime}ms before API call`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  
+  lastApiCall = Date.now();
+  return await apiCall();
+}
+
 // Individual audit item analysis
 export async function analyzeIndividualItem(auditItem: AuditItem, checklistDetails?: any): Promise<{ score: number; aiAnalysis: string }> {
   try {
@@ -188,22 +206,24 @@ Please provide a JSON response with:
   "aiAnalysis": "Detailed analysis explaining the score with specific observations and recommendations"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            score: { type: "number", minimum: 0, maximum: 5 },
-            aiAnalysis: { type: "string" }
-          },
-          required: ["score", "aiAnalysis"]
-        }
-      },
-      contents: analysisPrompt
-    });
+    const response = await rateLimitedApiCall(() => 
+      ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              score: { type: "number", minimum: 0, maximum: 5 },
+              aiAnalysis: { type: "string" }
+            },
+            required: ["score", "aiAnalysis"]
+          }
+        },
+        contents: analysisPrompt
+      })
+    );
 
     const rawJson = response.text;
     console.log(`AI Item Analysis for ${auditItem.item}:`, rawJson);

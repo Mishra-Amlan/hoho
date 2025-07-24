@@ -18,29 +18,65 @@ function calculateAuditScores(auditItems: AuditItem[]) {
     };
   }
 
-  // Calculate scores based on completion and available data
+  // Check if we have individual item scores to use
+  const itemsWithScores = auditItems.filter(item => item.score !== null && item.score !== undefined);
+  
+  if (itemsWithScores.length > 0) {
+    // Calculate based on actual item scores (0-5 scale)
+    const totalScore = itemsWithScores.reduce((sum, item) => sum + (item.score || 0), 0);
+    const averageScore = totalScore / itemsWithScores.length;
+    
+    // Convert from 0-5 scale to 0-100 scale
+    const overallScore = Math.round((averageScore / 5) * 100);
+    
+    // Calculate category-specific scores based on actual item scores by category
+    const cleanlinessItems = itemsWithScores.filter(item => item.category === 'Cleanliness');
+    const brandingItems = itemsWithScores.filter(item => item.category === 'Branding');
+    const operationalItems = itemsWithScores.filter(item => item.category === 'Operational');
+    
+    const cleanlinessScore = cleanlinessItems.length > 0 
+      ? Math.round((cleanlinessItems.reduce((sum, item) => sum + (item.score || 0), 0) / cleanlinessItems.length / 5) * 100)
+      : overallScore;
+      
+    const brandingScore = brandingItems.length > 0 
+      ? Math.round((brandingItems.reduce((sum, item) => sum + (item.score || 0), 0) / brandingItems.length / 5) * 100)
+      : overallScore;
+      
+    const operationalScore = operationalItems.length > 0 
+      ? Math.round((operationalItems.reduce((sum, item) => sum + (item.score || 0), 0) / operationalItems.length / 5) * 100)
+      : overallScore;
+    
+    // Determine compliance zone based on actual performance
+    const complianceZone = overallScore >= 85 ? 'green' : overallScore >= 70 ? 'amber' : 'red';
+    
+    return {
+      overallScore,
+      cleanlinessScore,
+      brandingScore,
+      operationalScore,
+      complianceZone,
+      findings: `Audit analysis completed based on ${auditItems.length} checklist items with ${itemsWithScores.length} items scored. Average item score: ${averageScore.toFixed(1)}/5. Performance analysis shows ${complianceZone} compliance zone.`,
+      actionPlan: `1. Review items scoring below 4/5 for improvement opportunities\n2. Maintain high-performing areas (${itemsWithScores.filter(i => (i.score || 0) >= 4).length} items)\n3. Focus immediate attention on low-scoring items (${itemsWithScores.filter(i => (i.score || 0) < 3).length} items)\n4. Implement targeted action plans for each category\n5. Schedule follow-up review within 30 days`
+    };
+  }
+
+  // Fallback to completion-based scoring if no individual scores available
   const totalItems = auditItems.length;
   const itemsWithComments = auditItems.filter(item => item.comments && item.comments.trim() !== '').length;
   const itemsWithPhotos = auditItems.filter(item => item.photos && item.photos !== '[]' && item.photos !== null).length;
   const itemsCompleted = auditItems.filter(item => item.status === 'completed').length;
   
-  // Base score calculation (0-100)
   const completionRate = totalItems > 0 ? (itemsCompleted / totalItems) * 100 : 0;
   const documentationRate = totalItems > 0 ? (itemsWithComments / totalItems) * 100 : 0;
   const evidenceRate = totalItems > 0 ? (itemsWithPhotos / totalItems) * 100 : 0;
   
-  // Weighted scoring
   const baseScore = Math.round((completionRate * 0.4) + (documentationRate * 0.4) + (evidenceRate * 0.2));
-  
-  // Ensure reasonable score ranges
   const overallScore = Math.max(65, Math.min(95, baseScore));
   
-  // Category-specific scoring with slight variations
   const cleanlinessScore = Math.max(60, Math.min(98, overallScore + Math.floor(Math.random() * 10) - 5));
   const brandingScore = Math.max(65, Math.min(95, overallScore + Math.floor(Math.random() * 8) - 4));
   const operationalScore = Math.max(70, Math.min(92, overallScore + Math.floor(Math.random() * 6) - 3));
   
-  // Determine compliance zone
   const complianceZone = overallScore >= 85 ? 'green' : overallScore >= 70 ? 'amber' : 'red';
   
   return {
