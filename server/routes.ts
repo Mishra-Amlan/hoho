@@ -92,7 +92,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/audits/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updateData = req.body;
+      const updateData = { ...req.body };
+      
+      // Convert timestamp strings to Date objects
+      if (updateData.submittedAt && typeof updateData.submittedAt === 'string') {
+        updateData.submittedAt = new Date(updateData.submittedAt);
+      }
+      if (updateData.reviewedAt && typeof updateData.reviewedAt === 'string') {
+        updateData.reviewedAt = new Date(updateData.reviewedAt);
+      }
       
       console.log('Updating audit:', id, 'with data:', updateData);
       
