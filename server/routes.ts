@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(audit);
     } catch (error) {
       console.error('Update audit error:', error);
-      res.status(500).json({ message: "Failed to update audit", error: error.message });
+      res.status(500).json({ message: "Failed to update audit", error: (error as Error).message });
     }
   });
 
@@ -163,10 +163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getAllUsers();
       
       if (role) {
-        const filteredUsers = users.filter(user => user.role === role);
-        res.json(filteredUsers.map(user => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
+        const filteredUsers = users.filter((user: any) => user.role === role);
+        res.json(filteredUsers.map((user: any) => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
       } else {
-        res.json(users.map(user => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
+        res.json(users.map((user: any) => ({ id: user.id, name: user.name, role: user.role, email: user.email })));
       }
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users" });

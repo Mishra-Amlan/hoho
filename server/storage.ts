@@ -13,6 +13,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   
   // Property methods
   getAllProperties(): Promise<Property[]>;
@@ -52,6 +53,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
   // Property methods
   async getAllProperties(): Promise<Property[]> {
     return db.select().from(properties);
@@ -87,6 +92,10 @@ export class DatabaseStorage implements IStorage {
   async getAudit(id: number): Promise<Audit | undefined> {
     const result = await db.select().from(audits).where(eq(audits.id, id));
     return result[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
   }
 
   async createAudit(audit: InsertAudit): Promise<Audit> {
