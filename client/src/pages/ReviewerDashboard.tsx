@@ -12,7 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { HOTEL_AUDIT_CHECKLIST } from '@shared/auditChecklist';
 import { useAudits, useUpdateAudit, useAuditItems } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, AlertTriangle, Clock, Eye, MessageSquare } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Eye, MessageSquare, Brain, Zap } from 'lucide-react';
 
 export default function ReviewerDashboard() {
   const { user } = useAuth();
@@ -90,6 +91,40 @@ export default function ReviewerDashboard() {
         description: "Unable to reject audit. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  // AI Analysis mutation
+  const analyzeAudit = useMutation({
+    mutationFn: async (auditId: number) => {
+      const response = await fetch(`/api/audits/${auditId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Analysis failed');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "AI Analysis Complete",
+        description: "The audit has been analyzed and scored by AI.",
+      });
+      // Refetch audit data to get updated scores
+      window.location.reload();
+    },
+    onError: (error) => {
+      console.error('AI analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "AI analysis could not be completed. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleRunAIAnalysis = () => {
+    if (selectedAudit) {
+      analyzeAudit.mutate(selectedAudit.id);
     }
   };
 
@@ -310,7 +345,30 @@ export default function ReviewerDashboard() {
                     
                     <TabsContent value="ai-analysis" className="space-y-6 mt-6">
                       <div className="p-6 bg-blue-50 rounded-lg">
-                        <h3 className="font-semibold text-lg mb-4 text-blue-800">AI Analysis Results</h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-semibold text-lg text-blue-800">AI Analysis Results</h3>
+                          {!selectedAudit.overallScore && (
+                            <Button 
+                              onClick={handleRunAIAnalysis}
+                              disabled={analyzeAudit.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="border-blue-500 text-blue-600 hover:bg-blue-100"
+                            >
+                              {analyzeAudit.isPending ? (
+                                <>
+                                  <Zap className="h-4 w-4 mr-2 animate-spin" />
+                                  Analyzing...
+                                </>
+                              ) : (
+                                <>
+                                  <Brain className="h-4 w-4 mr-2" />
+                                  Run AI Analysis
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                         
                         {selectedAudit.overallScore ? (
                           <div className="space-y-4">
@@ -344,16 +402,31 @@ export default function ReviewerDashboard() {
                           </div>
                         ) : (
                           <div className="text-center py-8">
-                            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                            <p className="text-yellow-700 font-medium">AI Analysis Pending</p>
-                            <p className="text-sm text-yellow-600">The AI system is processing this audit. Scores will be available shortly.</p>
+                            <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                            <p className="text-blue-700 font-medium">AI Analysis Not Started</p>
+                            <p className="text-sm text-blue-600">Click "Run AI Analysis" to generate intelligent scoring and insights for this audit.</p>
                           </div>
                         )}
                         
                         {selectedAudit.findings && (
-                          <div className="mt-6 p-4 bg-white rounded border">
-                            <h4 className="font-medium text-gray-900 mb-2">AI Insights & Recommendations</h4>
-                            <p className="text-gray-700">{selectedAudit.findings}</p>
+                          <div className="mt-6 space-y-4">
+                            <div className="p-4 bg-white rounded border">
+                              <h4 className="font-medium text-gray-900 mb-2">
+                                <Brain className="h-4 w-4 inline mr-2" />
+                                AI Findings & Insights
+                              </h4>
+                              <p className="text-gray-700 whitespace-pre-line">{selectedAudit.findings}</p>
+                            </div>
+                            
+                            {selectedAudit.actionPlan && (
+                              <div className="p-4 bg-green-50 rounded border border-green-200">
+                                <h4 className="font-medium text-green-900 mb-2">
+                                  <Zap className="h-4 w-4 inline mr-2" />
+                                  Recommended Action Plan
+                                </h4>
+                                <p className="text-green-800 whitespace-pre-line">{selectedAudit.actionPlan}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

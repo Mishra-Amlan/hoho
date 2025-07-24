@@ -173,6 +173,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Analysis endpoint
+  app.post("/api/audits/:id/analyze", async (req, res) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      const audit = await storage.getAudit(auditId);
+      const auditItems = await storage.getAuditItems(auditId);
+      
+      if (!audit) {
+        return res.status(404).json({ message: "Audit not found" });
+      }
+
+      // Generate AI analysis and scores
+      const { analyzeAuditData } = await import("./geminiScoring");
+      const analysis = await analyzeAuditData(audit, auditItems);
+      
+      // Update audit with AI-generated scores
+      const updatedAudit = await storage.updateAudit(auditId, {
+        overallScore: analysis.overallScore,
+        cleanlinessScore: analysis.cleanlinessScore,
+        brandingScore: analysis.brandingScore,
+        operationalScore: analysis.operationalScore,
+        complianceZone: analysis.complianceZone,
+        findings: analysis.findings,
+        actionPlan: analysis.actionPlan
+      });
+
+      res.json({ 
+        audit: updatedAudit, 
+        analysis: analysis 
+      });
+    } catch (error) {
+      console.error('AI Analysis error:', error);
+      res.status(500).json({ message: "Failed to analyze audit", error: (error as Error).message });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
