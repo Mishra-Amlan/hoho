@@ -7,9 +7,11 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HOTEL_AUDIT_CHECKLIST, ChecklistItem } from '@shared/auditChecklist';
-import { useAudits, useUpdateAudit } from '@/hooks/use-api';
+import { useAudits, useUpdateAudit, useProperties } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Send, Camera, Video, MessageSquare } from 'lucide-react';
+import { Save, Send, Camera, Video, MessageSquare, Clock, CheckCircle, Calendar, Building } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AuditorDashboard() {
   const { user } = useAuth();
@@ -21,8 +23,47 @@ export default function AuditorDashboard() {
   const [currentMediaType, setCurrentMediaType] = useState<'photo' | 'video' | 'text'>('photo');
 
   const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
+  const { data: properties = [] } = useProperties();
   const updateAudit = useUpdateAudit();
   const currentAudit = audits.find((audit: any) => audit.status === 'in_progress') || audits[0];
+  
+  // Filter audits by status
+  const pendingAudits = audits.filter((audit: any) => 
+    audit.status === 'scheduled' || audit.status === 'in_progress'
+  );
+  const completedAudits = audits.filter((audit: any) => 
+    audit.status === 'submitted' || audit.status === 'approved' || audit.status === 'needs_revision'
+  );
+  
+  // Helper function to get property name
+  const getPropertyName = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
+    return property ? property.name : `Property ${propertyId}`;
+  };
+  
+  // Helper function to get property location
+  const getPropertyLocation = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
+    return property ? property.location : 'Unknown Location';
+  };
+  
+  // Helper function to get status badge
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Scheduled</Badge>;
+      case 'in_progress':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">In Progress</Badge>;
+      case 'submitted':
+        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Submitted</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
+      case 'needs_revision':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Needs Revision</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
   const handleSaveDraft = async () => {
     if (!currentAudit) return;
@@ -154,11 +195,15 @@ export default function AuditorDashboard() {
     );
   }
 
-  if (!currentAudit) {
+  if (audits.length === 0) {
     return (
       <div className="min-h-screen gradient-bg">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">My Assigned Audits</h1>
+            <p className="text-gray-700 text-lg">Conduct audits, record observations, and upload evidence</p>
+          </div>
           <Card>
             <CardContent className="p-8 text-center">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">No Assigned Audits</h2>
@@ -169,6 +214,97 @@ export default function AuditorDashboard() {
       </div>
     );
   }
+
+  // Render audit card
+  const renderAuditCard = (audit: any) => (
+    <Card key={audit.id} className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Building className="w-5 h-5 text-blue-600" />
+              {getPropertyName(audit.propertyId)}
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{getPropertyLocation(audit.propertyId)}</p>
+          </div>
+          {getStatusBadge(audit.status)}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Audit ID:</span>
+            <span className="font-medium">#{audit.id}</span>
+          </div>
+          
+          {audit.createdAt && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Created:</span>
+              <span className="font-medium flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {new Date(audit.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+          
+          {audit.submittedAt && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Submitted:</span>
+              <span className="font-medium">{new Date(audit.submittedAt).toLocaleDateString()}</span>
+            </div>
+          )}
+          
+          {audit.overallScore && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Overall Score:</span>
+              <span className={`font-bold ${
+                audit.overallScore >= 80 ? 'text-green-600' : 
+                audit.overallScore >= 60 ? 'text-yellow-600' : 
+                'text-red-600'
+              }`}>
+                {audit.overallScore}%
+              </span>
+            </div>
+          )}
+          
+          <div className="pt-3 border-t">
+            {audit.status === 'scheduled' || audit.status === 'in_progress' ? (
+              <Button 
+                onClick={() => handleStartAudit(audit)} 
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {audit.status === 'scheduled' ? 'Start Audit' : 'Continue Audit'}
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => handleViewAudit(audit)}
+                className="w-full"
+              >
+                View Details
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const handleStartAudit = (audit: any) => {
+    // Set current audit and switch to audit checklist view
+    setSelectedChecklistItem(null);
+    toast({
+      title: "Audit Started",
+      description: `Started audit for ${getPropertyName(audit.propertyId)}`,
+    });
+  };
+
+  const handleViewAudit = (audit: any) => {
+    toast({
+      title: "Audit Details",
+      description: `Viewing details for ${getPropertyName(audit.propertyId)}`,
+    });
+  };
 
   return (
     <div className="min-h-screen gradient-bg">
@@ -181,7 +317,94 @@ export default function AuditorDashboard() {
           <p className="text-gray-700 text-lg">Conduct audits, record observations, and upload evidence</p>
         </div>
 
-        {/* Current Audit Card */}
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Clock className="w-8 h-8 text-blue-600 mr-3" />
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">Pending Audits</p>
+                  <p className="text-2xl font-bold text-blue-900">{pendingAudits.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
+                <div>
+                  <p className="text-sm text-green-600 font-medium">Completed Audits</p>
+                  <p className="text-2xl font-bold text-green-900">{completedAudits.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-purple-50 border-purple-200">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Building className="w-8 h-8 text-purple-600 mr-3" />
+                <div>
+                  <p className="text-sm text-purple-600 font-medium">Total Audits</p>
+                  <p className="text-2xl font-bold text-purple-900">{audits.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Audits Tabs */}
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pending Audits ({pendingAudits.length})
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Completed Audits ({completedAudits.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="pending" className="mt-6">
+            {pendingAudits.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Audits</h3>
+                  <p className="text-gray-600">All your audits are completed or you have no assignments.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pendingAudits.map(renderAuditCard)}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed" className="mt-6">
+            {completedAudits.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Completed Audits</h3>
+                  <p className="text-gray-600">You haven't completed any audits yet.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {completedAudits.map(renderAuditCard)}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Current Audit Checklist (Hidden by default, shown when user starts an audit) */}
+        {selectedChecklistItem && currentAudit && (
+        <>
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -416,6 +639,8 @@ export default function AuditorDashboard() {
             </CardContent>
           </Card>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

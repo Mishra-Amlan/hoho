@@ -16,6 +16,10 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 ✓ Added new "Approved Audits" tab with comprehensive audit details
 ✓ Implemented audit items display with scores and comments
 ✓ Added proper audit status management including "approved" state
+✓ Enhanced Auditor Dashboard with tile-based layout for pending/completed audits
+✓ Added property names instead of property IDs for better user experience
+✓ Implemented tabbed interface organizing audits by status with summary statistics
+✓ Added detailed audit cards with property locations, dates, scores, and action buttons
 
 ## User Preferences
 
