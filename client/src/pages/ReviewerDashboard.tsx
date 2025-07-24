@@ -28,9 +28,11 @@ export default function ReviewerDashboard() {
   const { data: allAudits = [], isLoading } = useAudits({ reviewerId: user?.id });
   const updateAudit = useUpdateAudit();
   
-  // Filter audits that are submitted and awaiting review
+  // Filter audits that are submitted and awaiting review, or already approved for viewing
   const pendingAudits = allAudits.filter((audit: any) => audit.status === 'submitted');
-  const selectedAudit = selectedAuditId ? allAudits.find((audit: any) => audit.id === selectedAuditId) : pendingAudits[0];
+  const completedAudits = allAudits.filter((audit: any) => audit.status === 'approved');
+  const availableAudits = [...pendingAudits, ...completedAudits];
+  const selectedAudit = selectedAuditId ? allAudits.find((audit: any) => audit.id === selectedAuditId) : availableAudits[0];
   
   // Fetch audit items for selected audit
   const { data: auditItems = [] } = useAuditItems(selectedAudit?.id);
@@ -267,7 +269,7 @@ export default function ReviewerDashboard() {
     return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
 
-  if (isLoading || !selectedAudit) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
@@ -276,6 +278,27 @@ export default function ReviewerDashboard() {
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="h-64 bg-gray-200 rounded"></div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where no audits are available
+  if (availableAudits.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">Review Queue</h1>
+            <p className="text-gray-700 text-lg">Validate audit reports and AI-generated scores</p>
+          </div>
+          <Card>
+            <CardContent className="p-8 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Audits to Review</h2>
+              <p className="text-gray-600">There are currently no audits assigned to you for review.</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
