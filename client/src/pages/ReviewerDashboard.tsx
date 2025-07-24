@@ -21,6 +21,8 @@ export default function ReviewerDashboard() {
   const [selectedAuditId, setSelectedAuditId] = useState<number | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>({});
+  const [aiAnalysisResults, setAiAnalysisResults] = useState<Record<string, { score: number; aiAnalysis: string; isOverridden?: boolean }>>({});
+  const [analyzingItems, setAnalyzingItems] = useState<Set<number>>(new Set());
 
   // Fetch audits assigned to this reviewer that are submitted
   const { data: allAudits = [], isLoading } = useAudits({ reviewerId: user?.id });
@@ -123,9 +125,123 @@ export default function ReviewerDashboard() {
   });
 
   const handleRunAIAnalysis = () => {
-    if (selectedAudit) {
-      analyzeAudit.mutate(selectedAudit.id);
+    if (!selectedAudit) return;
+    analyzeAudit.mutate(selectedAudit.id);
+  };
+
+  // Analyze individual audit item
+  const analyzeIndividualItem = async (itemId: number, auditItem: any) => {
+    setAnalyzingItems(prev => new Set(Array.from(prev).concat(itemId)));
+    
+    try {
+      const response = await fetch(`/api/audit-items/${itemId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditId: selectedAudit?.id,
+          checklistDetails: {
+            description: auditItem.description || '',
+            weight: auditItem.weight || 1,
+            maxScore: 5
+          }
+        })
+      });
+      
+      if (!response.ok) throw new Error('Analysis failed');
+      
+      const result = await response.json();
+      
+      setAiAnalysisResults(prev => ({
+        ...prev,
+        [itemId]: {
+          score: result.score,
+          aiAnalysis: result.aiAnalysis,
+          isOverridden: false
+        }
+      }));
+      
+      toast({
+        title: "Item Analyzed",
+        description: `AI analysis complete for: ${auditItem.item}`,
+      });
+    } catch (error) {
+      console.error('Individual item analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Could not analyze this item. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzingItems(prev => new Set(Array.from(prev).filter(id => id !== itemId)));
     }
+  };
+
+  // Override AI score
+  const handleScoreOverride = async (itemId: number, newScore: number) => {
+    try {
+      const response = await fetch(`/api/audit-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: newScore })
+      });
+      
+      if (!response.ok) throw new Error('Update failed');
+      
+      setAiAnalysisResults(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          score: newScore,
+          isOverridden: true
+        }
+      }));
+      
+      toast({
+        title: "Score Updated",
+        description: `Score overridden to ${newScore} out of 5`,
+      });
+    } catch (error) {
+      console.error('Score override error:', error);
+      toast({
+        title: "Update Failed",
+        description: "Could not update score. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRunAllItemsAnalysis = async () => {
+    if (!selectedAudit || !auditItems.length) return;
+    
+    // Analyze all items in parallel
+    const promises = auditItems.map((item: any) => analyzeIndividualItem(item.id, item));
+    
+    try {
+      await Promise.all(promises);
+      toast({
+        title: "Analysis Complete",
+        description: `All ${auditItems.length} items analyzed successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Analysis Partially Failed",
+        description: "Some items could not be analyzed. Check individual items.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Calculate overall score from individual item scores
+  const calculateOverallScore = () => {
+    if (!auditItems.length) return 0;
+    
+    const totalScore = auditItems.reduce((sum: number, item: any) => {
+      const aiResult = aiAnalysisResults[item.id];
+      const score = aiResult ? aiResult.score : (item.score || 0);
+      return sum + score;
+    }, 0);
+    
+    return Math.round((totalScore / (auditItems.length * 5)) * 100);
   };
 
   const getStatusBadge = (status: string) => {
@@ -151,7 +267,7 @@ export default function ReviewerDashboard() {
     return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
 
-  if (isLoading) {
+  if (isLoading || !selectedAudit) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
@@ -347,27 +463,48 @@ export default function ReviewerDashboard() {
                       <div className="p-6 bg-blue-50 rounded-lg">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-semibold text-lg text-blue-800">AI Analysis Results</h3>
-                          {!selectedAudit.overallScore && (
+                          <div className="flex space-x-2">
                             <Button 
-                              onClick={handleRunAIAnalysis}
-                              disabled={analyzeAudit.isPending}
+                              onClick={handleRunAllItemsAnalysis}
+                              disabled={Array.from(analyzingItems).length > 0}
                               variant="outline"
                               size="sm"
-                              className="border-blue-500 text-blue-600 hover:bg-blue-100"
+                              className="border-green-500 text-green-600 hover:bg-green-100"
                             >
-                              {analyzeAudit.isPending ? (
+                              {Array.from(analyzingItems).length > 0 ? (
                                 <>
                                   <Zap className="h-4 w-4 mr-2 animate-spin" />
-                                  Analyzing...
+                                  Analyzing Items...
                                 </>
                               ) : (
                                 <>
                                   <Brain className="h-4 w-4 mr-2" />
-                                  Run AI Analysis
+                                  Analyze All Items
                                 </>
                               )}
                             </Button>
-                          )}
+                            {!selectedAudit.overallScore && (
+                              <Button 
+                                onClick={handleRunAIAnalysis}
+                                disabled={analyzeAudit.isPending}
+                                variant="outline"
+                                size="sm"
+                                className="border-blue-500 text-blue-600 hover:bg-blue-100"
+                              >
+                                {analyzeAudit.isPending ? (
+                                  <>
+                                    <Zap className="h-4 w-4 mr-2 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Brain className="h-4 w-4 mr-2" />
+                                    Run Overall Analysis
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         
                         {selectedAudit.overallScore ? (
@@ -427,6 +564,118 @@ export default function ReviewerDashboard() {
                                 <p className="text-green-800 whitespace-pre-line">{selectedAudit.actionPlan}</p>
                               </div>
                             )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Individual Item Analysis */}
+                      <div className="space-y-6">
+                        <h3 className="font-semibold text-lg text-gray-800">Individual Item Analysis</h3>
+                        
+                        {HOTEL_AUDIT_CHECKLIST.map((category) => (
+                          <div key={category.id} className="border rounded-lg p-4">
+                            <h4 className="font-semibold text-lg mb-4 text-gray-900">{category.name}</h4>
+                            <div className="space-y-4">
+                              {category.items.map((item) => {
+                                const auditItem = auditItems.find((ai: any) => ai.category === category.name && ai.item.includes(item.item.split(' ')[0]));
+                                const aiResult = auditItem ? aiAnalysisResults[auditItem.id] : null;
+                                const isAnalyzing = auditItem ? analyzingItems.has(auditItem.id) : false;
+                                
+                                return (
+                                  <div key={item.id} className="border rounded-lg p-4 bg-white">
+                                    <div className="flex items-start justify-between mb-3">
+                                      <div className="flex-1">
+                                        <h5 className="font-medium text-gray-900">{item.item}</h5>
+                                        <p className="text-sm text-gray-600">{item.description}</p>
+                                      </div>
+                                      
+                                      <div className="ml-4 flex items-center space-x-3">
+                                        {auditItem && (
+                                          <Button
+                                            onClick={() => analyzeIndividualItem(auditItem.id, auditItem)}
+                                            disabled={isAnalyzing}
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                                          >
+                                            {isAnalyzing ? (
+                                              <Zap className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <Brain className="h-4 w-4" />
+                                            )}
+                                          </Button>
+                                        )}
+                                        
+                                        {aiResult && (
+                                          <div className="text-right">
+                                            <div className={`text-lg font-bold ${aiResult.isOverridden ? 'text-orange-600' : 'text-blue-600'}`}>
+                                              {aiResult.score}/5
+                                            </div>
+                                            {aiResult.isOverridden && (
+                                              <div className="text-xs text-orange-600">Overridden</div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {auditItem?.comments && (
+                                      <div className="mb-3 p-3 bg-gray-50 rounded">
+                                        <p className="text-sm text-gray-700">
+                                          <MessageSquare className="h-4 w-4 inline mr-1" />
+                                          <strong>Auditor:</strong> {auditItem.comments}
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    {aiResult && (
+                                      <div className="space-y-3">
+                                        <div className="p-3 bg-blue-50 rounded">
+                                          <p className="text-sm text-blue-700">
+                                            <Brain className="h-4 w-4 inline mr-1" />
+                                            <strong>AI Analysis:</strong> {aiResult.aiAnalysis}
+                                          </p>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-3">
+                                          <label className="text-sm font-medium text-gray-700">Override Score:</label>
+                                          <Select onValueChange={(value) => handleScoreOverride(auditItem.id, parseInt(value))}>
+                                            <SelectTrigger className="w-20">
+                                              <SelectValue placeholder={aiResult.score.toString()} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="0">0</SelectItem>
+                                              <SelectItem value="1">1</SelectItem>
+                                              <SelectItem value="2">2</SelectItem>
+                                              <SelectItem value="3">3</SelectItem>
+                                              <SelectItem value="4">4</SelectItem>
+                                              <SelectItem value="5">5</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {!auditItem && (
+                                      <div className="p-3 bg-yellow-50 rounded">
+                                        <p className="text-sm text-yellow-700">No auditor data available for this item</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {auditItems.length > 0 && (
+                          <div className="p-4 bg-green-50 rounded-lg">
+                            <h4 className="font-medium text-green-800 mb-2">Overall Calculated Score</h4>
+                            <div className="flex items-center justify-between">
+                              <span className="text-green-700">Based on individual item scores:</span>
+                              <span className="text-2xl font-bold text-green-800">{calculateOverallScore()}/100</span>
+                            </div>
+                            <Progress value={calculateOverallScore()} className="h-3 mt-2" />
                           </div>
                         )}
                       </div>

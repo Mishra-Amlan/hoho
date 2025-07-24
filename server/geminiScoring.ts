@@ -24,7 +24,7 @@ export async function analyzeAuditData(audit: Audit, auditItems: AuditItem[]): P
         category: item.category,
         item: item.item,
         comments: item.comments,
-        hasEvidence: item.mediaAttachments && item.mediaAttachments.length > 0
+        hasEvidence: item.photos && item.photos.length > 0
       }))
     };
 
@@ -128,7 +128,7 @@ function generateFallbackAnalysis(auditItems: AuditItem[]): AIAnalysisResult {
   // Basic scoring based on available data
   const totalItems = auditItems.length;
   const itemsWithComments = auditItems.filter(item => item.comments && item.comments.trim() !== '').length;
-  const itemsWithEvidence = auditItems.filter(item => item.mediaAttachments && item.mediaAttachments.length > 0).length;
+  const itemsWithEvidence = auditItems.filter(item => item.photos && item.photos.length > 0).length;
   
   // Simple scoring algorithm
   const completionRate = totalItems > 0 ? (itemsWithComments / totalItems) * 100 : 0;
@@ -149,5 +149,118 @@ function generateFallbackAnalysis(auditItems: AuditItem[]): AIAnalysisResult {
     complianceZone,
     findings: `Analysis completed based on ${totalItems} audit items. ${itemsWithComments} items included detailed observations, and ${itemsWithEvidence} items provided supporting evidence. Key areas for attention have been identified across cleanliness, branding, and operational standards.`,
     actionPlan: `1. Review and address items lacking detailed observations\n2. Increase evidence collection for compliance verification\n3. Focus on areas scoring below target thresholds\n4. Implement regular monitoring for sustained improvements\n5. Schedule follow-up audit within 30-60 days`
+  };
+}
+
+// Individual audit item analysis
+export async function analyzeIndividualItem(auditItem: AuditItem, checklistDetails?: any): Promise<{ score: number; aiAnalysis: string }> {
+  try {
+    const systemPrompt = `You are an expert hotel brand audit analyst. Analyze this specific audit checklist item and provide a score (0-5) and detailed analysis.
+
+SCORING CRITERIA:
+- 5: Excellent - Exceeds brand standards, no issues identified
+- 4: Good - Meets brand standards with minor suggestions for improvement  
+- 3: Satisfactory - Meets basic requirements but has room for improvement
+- 2: Below Standard - Notable issues that need attention
+- 1: Poor - Significant problems requiring immediate action
+- 0: Critical Failure - Does not meet minimum standards, major compliance issues
+
+Consider the auditor's comments, any evidence provided, and the specific requirements for this checklist item.`;
+
+    const analysisPrompt = `Analyze this hotel audit checklist item:
+
+Category: ${auditItem.category}
+Item: ${auditItem.item}
+Auditor Comments: ${auditItem.comments || 'No comments provided'}
+Evidence Provided: ${auditItem.photos ? 'Yes (photos attached)' : 'No evidence provided'}
+Current Status: ${auditItem.status || 'Not completed'}
+
+${checklistDetails ? `
+Checklist Details:
+- Description: ${checklistDetails.description || 'N/A'}
+- Weight: ${checklistDetails.weight || 'Standard'}
+- Max Score: ${checklistDetails.maxScore || 5}
+` : ''}
+
+Please provide a JSON response with:
+{
+  "score": number (0-5),
+  "aiAnalysis": "Detailed analysis explaining the score with specific observations and recommendations"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            score: { type: "number", minimum: 0, maximum: 5 },
+            aiAnalysis: { type: "string" }
+          },
+          required: ["score", "aiAnalysis"]
+        }
+      },
+      contents: analysisPrompt
+    });
+
+    const rawJson = response.text;
+    console.log(`AI Item Analysis for ${auditItem.item}:`, rawJson);
+
+    if (rawJson) {
+      const analysis = JSON.parse(rawJson);
+      
+      // Validate score is within range
+      analysis.score = Math.max(0, Math.min(5, Math.round(analysis.score)));
+      
+      return analysis;
+    } else {
+      throw new Error("Empty response from AI model");
+    }
+  } catch (error) {
+    console.error('Gemini AI Item Analysis error:', error);
+    
+    // Fallback scoring based on basic heuristics
+    return generateFallbackItemAnalysis(auditItem);
+  }
+}
+
+function generateFallbackItemAnalysis(auditItem: AuditItem): { score: number; aiAnalysis: string } {
+  let score = 3; // Default satisfactory score
+  let analysis = "Analysis completed using fallback scoring. ";
+
+  // Adjust score based on available data
+  if (auditItem.comments && auditItem.comments.trim() !== '') {
+    const comments = auditItem.comments.toLowerCase();
+    
+    // Check for positive indicators
+    if (comments.includes('excellent') || comments.includes('perfect') || comments.includes('outstanding')) {
+      score = 5;
+      analysis += "Positive feedback indicates excellent performance. ";
+    } else if (comments.includes('good') || comments.includes('satisfactory') || comments.includes('meets')) {
+      score = 4;
+      analysis += "Comments indicate good compliance with standards. ";
+    } else if (comments.includes('issue') || comments.includes('problem') || comments.includes('needs improvement')) {
+      score = 2;
+      analysis += "Issues identified that require attention. ";
+    } else if (comments.includes('critical') || comments.includes('poor') || comments.includes('unacceptable')) {
+      score = 1;
+      analysis += "Critical issues identified requiring immediate action. ";
+    }
+  } else {
+    score = 2;
+    analysis += "No detailed comments provided, limiting assessment accuracy. ";
+  }
+
+  // Bonus for evidence provided
+  if (auditItem.photos && auditItem.photos.length > 0) {
+    score = Math.min(5, score + 0.5);
+    analysis += "Supporting evidence provided enhances reliability of assessment. ";
+  }
+
+  return {
+    score: Math.round(score),
+    aiAnalysis: analysis + "Recommend detailed review and follow-up to ensure compliance standards are maintained."
   };
 }

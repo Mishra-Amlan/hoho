@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Analysis endpoint
+  // AI Analysis endpoint for entire audit
   app.post("/api/audits/:id/analyze", async (req, res) => {
     try {
       const auditId = parseInt(req.params.id);
@@ -206,6 +206,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('AI Analysis error:', error);
       res.status(500).json({ message: "Failed to analyze audit", error: (error as Error).message });
+    }
+  });
+
+  // AI Analysis endpoint for individual audit item
+  app.post("/api/audit-items/:itemId/analyze", async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const auditItems = await storage.getAuditItems(req.body.auditId || 0);
+      const auditItem = auditItems.find(item => item.id === itemId);
+      
+      if (!auditItem) {
+        return res.status(404).json({ message: "Audit item not found" });
+      }
+
+      // Generate AI analysis and score for individual item
+      const { analyzeIndividualItem } = await import("./geminiScoring");
+      const analysis = await analyzeIndividualItem(auditItem, req.body.checklistDetails);
+      
+      res.json({ 
+        itemId,
+        ...analysis
+      });
+    } catch (error) {
+      console.error('Individual AI Analysis error:', error);
+      res.status(500).json({ message: "Failed to analyze audit item", error: (error as Error).message });
+    }
+  });
+
+  // Update audit item score (for reviewer overrides)
+  app.patch("/api/audit-items/:itemId", async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const { score, comments, reviewerNotes } = req.body;
+      
+      const updatedItem = await storage.updateAuditItem(itemId, {
+        score,
+        comments: comments || undefined,
+        // Store reviewer notes in a new field if needed
+      });
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Update audit item error:', error);
+      res.status(500).json({ message: "Failed to update audit item", error: (error as Error).message });
     }
   });
 
