@@ -4,6 +4,15 @@
 
 This is a comprehensive hotel brand audit automation platform that leverages AI technology to analyze diverse inputs such as photos, videos, and text-based checklists. The system supports multiple stakeholder personas including Admin (Vendor), Guest Auditor, Final Reviewer (QA), QA Corporate Team, and Hotel GM/Franchise Owner. The platform aims to automate hotel brand audits with 85%+ accuracy, handle up to 500 audits per day, and provide rapid actionable insights through detailed reporting.
 
+## Recent Changes (January 24, 2025)
+
+✓ Successfully migrated project from Replit Agent to Replit environment
+✓ Converted database schema from SQLite to PostgreSQL
+✓ Set up PostgreSQL database with proper connection and seeding
+✓ Fixed all dependency and configuration issues
+✓ Created comprehensive User Flow Demo showcasing all 5 personas
+✓ Application running successfully with all dashboards functional
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

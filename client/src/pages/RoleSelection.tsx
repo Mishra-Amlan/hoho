@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { RoleCard } from '@/components/RoleCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { UserRole } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { PlayCircle } from 'lucide-react';
 
 export default function RoleSelection() {
   const { login } = useAuth();
@@ -93,7 +94,14 @@ export default function RoleSelection() {
             <i className="fas fa-hotel text-4xl text-blue-600 mr-3"></i>
             <h1 className="text-4xl font-bold text-gray-800">Hotel Brand Audit Platform</h1>
           </div>
-          <p className="text-gray-600 text-lg">Select your role to access your personalized dashboard</p>
+          <p className="text-gray-600 text-lg mb-4">Select your role to access your personalized dashboard</p>
+          
+          <Link href="/user-flow-demo">
+            <Button variant="outline" className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200 hover:from-purple-100 hover:to-indigo-100">
+              <PlayCircle className="h-4 w-4 text-purple-600" />
+              <span className="text-purple-700 font-medium">Watch User Flow Demo</span>
+            </Button>  
+          </Link>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

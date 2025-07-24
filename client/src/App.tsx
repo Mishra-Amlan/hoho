@@ -13,6 +13,7 @@ import ReviewerDashboard from "@/pages/ReviewerDashboard";
 import CorporateDashboard from "@/pages/CorporateDashboard";
 import HotelGMDashboard from "@/pages/HotelGMDashboard";
 import AIDemoPage from "@/pages/AIDemoPage";
+import UserFlowDemo from "@/pages/UserFlowDemo";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={LoginPage} />
       <Route path="/roles" component={RoleSelection} />
       <Route path="/ai-demo" component={AIDemoPage} />
+      <Route path="/user-flow-demo" component={UserFlowDemo} />
       
       <Route path="/admin">
         <ProtectedRoute allowedRoles={['admin']}>
