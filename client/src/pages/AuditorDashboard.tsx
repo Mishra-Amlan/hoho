@@ -8,13 +8,14 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Audit, AuditItem } from '@shared/schema';
+import { HOTEL_AUDIT_CHECKLIST, ChecklistItem } from '@shared/auditChecklist';
 import { AuditChecklistModal } from '@/components/AuditChecklistModal';
 import { PhotoUploadModal } from '@/components/PhotoUploadModal';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { DragDropUpload } from '@/components/DragDropUpload';
 import { useAudits, useUpdateAudit } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Send, FileText, Camera, Mic } from 'lucide-react';
+import { Save, Send, FileText, Camera, Mic, Video, MessageSquare, CheckCircle, Clock, Star } from 'lucide-react';
 
 export default function AuditorDashboard() {
   const { user } = useAuth();
@@ -24,30 +25,10 @@ export default function AuditorDashboard() {
   const [draftNotes, setDraftNotes] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
-  const [checklistItems] = useState([
-    {
-      id: 1,
-      title: 'Logo Display Compliance',
-      description: 'Check if all Taj logos are properly displayed and meet brand guidelines',
-      category: 'branding',
-      score: null,
-      comments: '',
-      photos: []
-    },
-    {
-      id: 2, 
-      title: 'Staff Uniform Standards',
-      description: 'Verify staff uniforms meet brand standards and are well-maintained',
-      category: 'branding',
-      score: 4,
-      comments: 'All staff uniforms are clean and properly maintained. Name tags are clearly visible.',
-      photos: [
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200',
-        'https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200'
-      ]
-    }
-  ]);
+  const [selectedChecklistItem, setSelectedChecklistItem] = useState<ChecklistItem | null>(null);
+  const [itemScores, setItemScores] = useState<Record<string, { score: number | null; comments: string; media: any[] }>>({});
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [currentMediaType, setCurrentMediaType] = useState<'photo' | 'video' | 'text'>('photo');
 
   const { data: audits = [], isLoading } = useAudits({ auditorId: user?.id });
   const updateAudit = useUpdateAudit();
@@ -113,6 +94,51 @@ export default function AuditorDashboard() {
   const handleFilesChange = (files: any[]) => {
     setAttachedFiles(files);
   };
+
+  const handleChecklistItemSelect = (item: ChecklistItem) => {
+    setSelectedChecklistItem(item);
+    setShowChecklistModal(true);
+  };
+
+  const handleMediaCapture = (itemId: string, mediaType: 'photo' | 'video' | 'text', content: any) => {
+    setItemScores(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        media: [
+          ...(prev[itemId]?.media || []),
+          { type: mediaType, content, timestamp: new Date().toISOString() }
+        ]
+      }
+    }));
+  };
+
+  const handleScoreChange = (itemId: string, score: number, comments: string) => {
+    setItemScores(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        score,
+        comments
+      }
+    }));
+  };
+
+  const getItemScore = (itemId: string) => itemScores[itemId] || { score: null, comments: '', media: [] };
+  
+  const getCompletedItemsCount = () => {
+    return Object.values(itemScores).filter(item => item.score !== null).length;
+  };
+
+  const getTotalItemsCount = () => {
+    return HOTEL_AUDIT_CHECKLIST.reduce((total, category) => total + category.items.length, 0);
+  };
+
+  const getOverallProgress = () => {
+    const completed = getCompletedItemsCount();
+    const total = getTotalItemsCount();
+    return total > 0 ? (completed / total) * 100 : 0;
+  };
   
   if (isLoading) {
     return (
@@ -173,37 +199,34 @@ export default function AuditorDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Progress Overview */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Overview</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Audit Progress</h3>
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Cleanliness & Hygiene</span>
-                      <span className="text-sm font-semibold text-green-600">
-                        {currentAudit.cleanlinessScore ? `${currentAudit.cleanlinessScore}/5` : 'Pending'}
+                      <span className="text-sm text-gray-600">Overall Progress</span>
+                      <span className="text-sm font-semibold text-blue-600">
+                        {getCompletedItemsCount()}/{getTotalItemsCount()} items completed
                       </span>
                     </div>
-                    <Progress value={currentAudit.cleanlinessScore ? (currentAudit.cleanlinessScore / 5) * 100 : 0} className="h-2" />
+                    <Progress value={getOverallProgress()} className="h-3" />
                   </div>
                   
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Branding Compliance</span>
-                      <span className="text-sm font-semibold text-yellow-600">
-                        {currentAudit.brandingScore ? `${currentAudit.brandingScore}/5` : 'Pending'}
-                      </span>
-                    </div>
-                    <Progress value={currentAudit.brandingScore ? (currentAudit.brandingScore / 5) * 100 : 0} className="h-2" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Operational Efficiency</span>
-                      <span className="text-sm font-semibold text-gray-400">
-                        {currentAudit.operationalScore ? `${currentAudit.operationalScore}/5` : 'Pending'}
-                      </span>
-                    </div>
-                    <Progress value={currentAudit.operationalScore ? (currentAudit.operationalScore / 5) * 100 : 0} className="h-2" />
-                  </div>
+                  {HOTEL_AUDIT_CHECKLIST.map((category) => {
+                    const categoryCompleted = category.items.filter(item => getItemScore(item.id).score !== null).length;
+                    const categoryProgress = category.items.length > 0 ? (categoryCompleted / category.items.length) * 100 : 0;
+                    
+                    return (
+                      <div key={category.id}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-gray-600">{category.name}</span>
+                          <span className="text-sm font-semibold text-gray-700">
+                            {categoryCompleted}/{category.items.length}
+                          </span>
+                        </div>
+                        <Progress value={categoryProgress} className="h-2" />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -247,105 +270,177 @@ export default function AuditorDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Audit Checklist */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Branding Compliance Checklist</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {checklistItems.map((item) => (
-                    <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                          <p className="text-sm text-gray-600">{item.description}</p>
-                        </div>
-                        <Select defaultValue={item.score?.toString()}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Select Score" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5">Excellent (5)</SelectItem>
-                            <SelectItem value="4">Good (4)</SelectItem>
-                            <SelectItem value="3">Average (3)</SelectItem>
-                            <SelectItem value="2">Poor (2)</SelectItem>
-                            <SelectItem value="1">Critical (1)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {/* Enhanced Photo Upload with Drag & Drop */}
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Photos</label>
-                        {item.photos.length > 0 ? (
-                          <div className="grid grid-cols-3 gap-2 mb-4">
-                            {item.photos.map((photo, index) => (
-                              <img
-                                key={index} 
-                                src={photo}
-                                alt={`Evidence ${index + 1}`}
-                                className="rounded-lg object-cover h-32 w-full"
-                              />
-                            ))}
+            {/* Comprehensive Hotel Audit Checklist */}
+            {HOTEL_AUDIT_CHECKLIST.map((category) => (
+              <Card key={category.id} className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{category.name}</span>
+                    <span className="text-sm text-gray-500">
+                      {category.items.filter(item => getItemScore(item.id).score !== null).length}/{category.items.length} completed
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {category.items.map((item) => {
+                      const itemData = getItemScore(item.id);
+                      return (
+                        <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 mb-1">{item.item}</h3>
+                              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Max Score: {item.maxScore}</span>
+                                <span className="text-xs text-gray-500">Weight: {item.weight}</span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <Select 
+                                value={itemData.score?.toString() || ''} 
+                                onValueChange={(value) => handleScoreChange(item.id, parseInt(value), itemData.comments)}
+                              >
+                                <SelectTrigger className="w-40">
+                                  <SelectValue placeholder="Select Score" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: item.maxScore }, (_, i) => i + 1).map((score) => (
+                                    <SelectItem key={score} value={score.toString()}>
+                                      {score}/{item.maxScore}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                        ) : (
-                          <DragDropUpload
-                            onFilesChange={handleFilesChange}
-                            acceptedTypes={['image/*']}
-                            maxFiles={5}
-                            maxSizeInMB={10}
-                            className="mb-2"
-                          />
-                        )}
-                      </div>
+                          
+                          {/* Media Upload Options */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Collection</label>
+                            <div className="flex gap-2 mb-3">
+                              {item.mediaTypes.includes('photo') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedChecklistItem(item);
+                                    setCurrentMediaType('photo');
+                                    setShowMediaModal(true);
+                                  }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Camera className="h-4 w-4" />
+                                  Photo
+                                  {item.requiredMedia?.includes('photo') && <span className="text-red-500">*</span>}
+                                </Button>
+                              )}
+                              {item.mediaTypes.includes('video') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedChecklistItem(item);
+                                    setCurrentMediaType('video');
+                                    setShowMediaModal(true);
+                                  }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Video className="h-4 w-4" />
+                                  Video
+                                  {item.requiredMedia?.includes('video') && <span className="text-red-500">*</span>}
+                                </Button>
+                              )}
+                              {item.mediaTypes.includes('text') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedChecklistItem(item);
+                                    setCurrentMediaType('text');
+                                    setShowMediaModal(true);
+                                  }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                  Text Notes
+                                  {item.requiredMedia?.includes('text') && <span className="text-red-500">*</span>}
+                                </Button>
+                              )}
+                            </div>
+                            
+                            {/* Display collected media */}
+                            {itemData.media.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2 mb-4">
+                                {itemData.media.map((media: any, index: number) => (
+                                  <div key={index} className="border rounded p-2 bg-gray-50">
+                                    <div className="text-xs text-gray-600 mb-1">
+                                      {media.type === 'photo' && '📷 Photo'}
+                                      {media.type === 'video' && '📹 Video'}
+                                      {media.type === 'text' && '📝 Text Note'}
+                                    </div>
+                                    {media.type === 'text' && (
+                                      <p className="text-sm text-gray-800 truncate">{media.content}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Comments */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Comments</label>
-                        <Textarea 
-                          rows={3} 
-                          defaultValue={item.comments}
-                          placeholder="Add your observations and comments..."
-                        />
-                      </div>
-                    </div>
-                  ))}
+                          {/* Comments */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Auditor Comments</label>
+                            <Textarea 
+                              rows={3} 
+                              value={itemData.comments}
+                              onChange={(e) => handleScoreChange(item.id, itemData.score || 0, e.target.value)}
+                              placeholder="Add your observations and comments..."
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
 
                   {/* Additional Notes Section */}
-                  <div className="border-t pt-6">
-                    <h3 className="font-medium mb-3">Additional Audit Notes</h3>
-                    <Textarea 
-                      value={draftNotes}
-                      onChange={(e) => setDraftNotes(e.target.value)}
-                      placeholder="Add any additional observations, recommendations, or overall assessment notes..."
-                      className="min-h-24"
-                    />
-                  </div>
-
-                  {/* Enhanced Submit Actions */}
-                  <div className="flex space-x-4 pt-6">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={handleSaveDraft}
-                      disabled={updateAudit.isPending}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
-                    </Button>
-                    <Button 
-                      className="flex-1 bg-green-500 hover:bg-green-600"
-                      onClick={handleSubmitForReview}
-                      disabled={updateAudit.isPending}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Additional Audit Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea 
+                        value={draftNotes}
+                        onChange={(e) => setDraftNotes(e.target.value)}
+                        placeholder="Add any additional observations, recommendations, or overall assessment notes..."
+                        className="min-h-24"
+                      />
+                      
+                      {/* Enhanced Submit Actions */}
+                      <div className="flex space-x-4 mt-6">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={handleSaveDraft}
+                          disabled={updateAudit.isPending}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
+                        </Button>
+                        <Button 
+                          className="flex-1 bg-green-500 hover:bg-green-600"
+                          onClick={handleSubmitForReview}
+                          disabled={updateAudit.isPending}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
           </div>
 
           {/* Sidebar Tools */}
@@ -402,19 +497,23 @@ export default function AuditorDashboard() {
         </div>
 
         {/* Modals */}
-        <AuditChecklistModal
-          isOpen={showChecklistModal}
-          onOpenChange={setShowChecklistModal}
-          auditId={currentAudit.id}
-          propertyName={`Property ${currentAudit.propertyId}`}
-        />
+        {currentAudit && (
+          <>
+            <AuditChecklistModal
+              isOpen={showChecklistModal}
+              onOpenChange={setShowChecklistModal}
+              auditId={currentAudit.id}
+              propertyName={`Property ${currentAudit.propertyId}`}
+            />
 
-        <PhotoUploadModal
-          isOpen={showPhotoModal}
-          onOpenChange={setShowPhotoModal}
-          auditId={currentAudit.id}
-          propertyName={`Property ${currentAudit.propertyId}`}
-        />
+            <PhotoUploadModal
+              isOpen={showPhotoModal}
+              onOpenChange={setShowPhotoModal}
+              auditId={currentAudit.id}
+              propertyName={`Property ${currentAudit.propertyId}`}
+            />
+          </>
+        )}
       </div>
     </div>
   );
