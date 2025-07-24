@@ -94,4 +94,4 @@ export type InsertAuditItem = z.infer<typeof insertAuditItemSchema>;
 
 export type UserRole = 'admin' | 'auditor' | 'reviewer' | 'corporate' | 'hotelgm';
 export type ComplianceZone = 'green' | 'amber' | 'red';
-export type AuditStatus = 'scheduled' | 'in_progress' | 'submitted' | 'reviewed' | 'completed';
+export type AuditStatus = 'scheduled' | 'in_progress' | 'submitted' | 'reviewed' | 'completed' | 'approved' | 'needs_revision';

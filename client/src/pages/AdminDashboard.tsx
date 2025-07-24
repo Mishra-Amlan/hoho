@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { CalendarDays, Users, TrendingUp, AlertCircle, Building, FileText, Bot, Eye, History, Plus, Clock, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
 import { useProperties, useAudits, useHealthCheck, useCreateAudit } from '@/hooks/use-api';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,229 @@ const scheduleAuditSchema = z.object({
 
 type ScheduleAuditForm = z.infer<typeof scheduleAuditSchema>;
 
+// Component for displaying approved audit overview
+function ApprovedAuditsOverview({ audits, properties }: { audits: any[], properties: any[] }) {
+  const approvedAudits = audits.filter((audit: any) => audit.status === 'approved');
+
+  const getPropertyName = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
+    return property ? property.name : `Property ${propertyId}`;
+  };
+
+  if (approvedAudits.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600">No approved audits yet</p>
+        <p className="text-sm text-gray-500">Approved audits will appear here with detailed information</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {approvedAudits.map((audit: any) => (
+          <Card key={audit.id} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg">{getPropertyName(audit.propertyId)}</h3>
+                <Badge className="bg-green-100 text-green-800">Approved</Badge>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Overall Score:</span>
+                  <span className="font-medium">{audit.overallScore || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Cleanliness:</span>
+                  <span className="font-medium">{audit.cleanlinessScore || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Branding:</span>
+                  <span className="font-medium">{audit.brandingScore || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Operational:</span>
+                  <span className="font-medium">{audit.operationalScore || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Reviewed:</span>
+                  <span className="font-medium">
+                    {audit.reviewedAt ? new Date(audit.reviewedAt).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Component for displaying detailed audit information
+function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number, audits: any[], properties: any[] }) {
+  
+  // Fetch audit items for the selected audit
+  const { data: auditItems = [], isLoading: itemsLoading } = useQuery({
+    queryKey: ['/api/audits', auditId, 'items'],
+    queryFn: () => fetch(`/api/audits/${auditId}/items`).then(res => res.json()),
+    enabled: !!auditId,
+  });
+
+  const audit = audits.find((a: any) => a.id === auditId);
+  const property = properties.find((p: any) => p.id === audit?.propertyId);
+
+  if (!audit) {
+    return <div className="text-center py-8 text-gray-600">Audit not found</div>;
+  }
+
+  if (itemsLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-4 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Audit Header */}
+      <div className="border-b pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{property?.name || 'Unknown Property'}</h2>
+            <p className="text-gray-600">{property?.location || 'Unknown Location'}</p>
+          </div>
+          <Badge className="bg-green-100 text-green-800 text-lg px-3 py-1">Approved</Badge>
+        </div>
+      </div>
+
+      {/* Audit Scores */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">{audit.overallScore || 'N/A'}</div>
+            <div className="text-sm text-gray-600">Overall Score</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">{audit.cleanlinessScore || 'N/A'}</div>
+            <div className="text-sm text-gray-600">Cleanliness</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-600">{audit.brandingScore || 'N/A'}</div>
+            <div className="text-sm text-gray-600">Branding</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-orange-600">{audit.operationalScore || 'N/A'}</div>
+            <div className="text-sm text-gray-600">Operational</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Audit Items */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Checklist Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {auditItems.length === 0 ? (
+            <div className="text-center py-8 text-gray-600">
+              No audit items found for this audit
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {auditItems.map((item: any) => (
+                <div key={item.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Badge variant="outline" className="mb-2">{item.category}</Badge>
+                      <h4 className="font-medium">{item.item}</h4>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600">{item.score || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">Score</div>
+                    </div>
+                  </div>
+                  {item.comments && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-700">{item.comments}</p>
+                    </div>
+                  )}
+                  {item.photos && (
+                    <div className="mt-3">
+                      <Badge variant="outline" className="text-xs">
+                        <Eye className="w-3 h-3 mr-1" />
+                        Photo Evidence Available
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Audit Meta Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-600">Audit ID:</span>
+              <span className="ml-2">{audit.id}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Created:</span>
+              <span className="ml-2">{new Date(audit.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Submitted:</span>
+              <span className="ml-2">
+                {audit.submittedAt ? new Date(audit.submittedAt).toLocaleDateString() : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Reviewed:</span>
+              <span className="ml-2">
+                {audit.reviewedAt ? new Date(audit.reviewedAt).toLocaleDateString() : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Compliance Zone:</span>
+              <span className="ml-2">
+                <Badge 
+                  variant="outline" 
+                  className={audit.complianceZone === 'green' ? 'bg-green-50 text-green-700' : 
+                             audit.complianceZone === 'amber' ? 'bg-yellow-50 text-yellow-700' : 
+                             'bg-red-50 text-red-700'}
+                >
+                  {audit.complianceZone || 'N/A'}
+                </Badge>
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -36,6 +259,7 @@ export default function AdminDashboard() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('audits');
   const [auditFilter, setAuditFilter] = useState<string>('all');
+  const [selectedAuditId, setSelectedAuditId] = useState<number | null>(null);
 
   // Data fetching hooks
   const { data: properties = [], isLoading: propertiesLoading } = useProperties();
@@ -469,8 +693,9 @@ export default function AdminDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="audits">Audit Management</TabsTrigger>
+            <TabsTrigger value="approved">Approved Audits</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -535,6 +760,7 @@ export default function AdminDashboard() {
                           <th className="text-left p-3">Status</th>
                           <th className="text-left p-3">Created</th>
                           <th className="text-left p-3">Last Updated</th>
+                          <th className="text-left p-3">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -555,12 +781,41 @@ export default function AdminDashboard() {
                                   : new Date(audit.createdAt).toLocaleDateString()
                               }
                             </td>
+                            <td className="p-3">
+                              {audit.status === 'approved' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedAuditId(audit.id);
+                                    setActiveTab('approved');
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View Details
+                                </Button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="approved" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  Approved Audits - Detailed View
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedAuditId ? <ApprovedAuditDetails auditId={selectedAuditId} properties={properties} audits={audits} /> : <ApprovedAuditsOverview audits={audits} properties={properties} />}
               </CardContent>
             </Card>
           </TabsContent>
