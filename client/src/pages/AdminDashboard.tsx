@@ -174,28 +174,60 @@ function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number
           ) : (
             <div className="space-y-4">
               {auditItems.map((item: any) => (
-                <div key={item.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <Badge variant="outline" className="mb-2">{item.category}</Badge>
-                      <h4 className="font-medium">{item.item}</h4>
+                <div key={item.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            item.category === 'Cleanliness' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            item.category === 'Branding' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                            item.category === 'Operational' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            'bg-gray-50 text-gray-700 border-gray-200'
+                          }
+                        >
+                          {item.category}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={item.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}
+                        >
+                          {item.status}
+                        </Badge>
+                      </div>
+                      <h4 className="font-semibold text-gray-900">{item.item}</h4>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">{item.score || 'N/A'}</div>
-                      <div className="text-xs text-gray-500">Score</div>
+                    <div className="text-right ml-4">
+                      <div className={`text-2xl font-bold ${
+                        item.score >= 4 ? 'text-green-600' : 
+                        item.score >= 3 ? 'text-yellow-600' : 
+                        'text-red-600'
+                      }`}>
+                        {item.score || 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-500">Score (1-5)</div>
                     </div>
                   </div>
                   {item.comments && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded">
-                      <p className="text-sm text-gray-700">{item.comments}</p>
+                    <div className="mt-3 space-y-2">
+                      <h5 className="text-sm font-medium text-gray-700">Audit Details:</h5>
+                      <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                        <p className="text-sm text-gray-800 whitespace-pre-line">{item.comments}</p>
+                      </div>
                     </div>
                   )}
                   {item.photos && (
                     <div className="mt-3">
-                      <Badge variant="outline" className="text-xs">
-                        <Eye className="w-3 h-3 mr-1" />
-                        Photo Evidence Available
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                          <Eye className="w-3 h-3 mr-1" />
+                          Photo Evidence: {JSON.parse(item.photos || '[]').length} images
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          Files: {JSON.parse(item.photos || '[]').join(', ')}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
