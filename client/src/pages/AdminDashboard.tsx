@@ -200,25 +200,42 @@ function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number
                     </div>
                     <div className="text-right ml-4">
                       <div className={`text-2xl font-bold ${
-                        item.score >= 4 ? 'text-green-600' : 
-                        item.score >= 3 ? 'text-yellow-600' : 
-                        'text-red-600'
+                        item.score !== null && item.score !== undefined ? (
+                          item.score >= 4 ? 'text-green-600' : 
+                          item.score >= 3 ? 'text-yellow-600' : 
+                          'text-red-600'
+                        ) : 'text-gray-400'
                       }`}>
-                        {item.score || 'N/A'}
+                        {item.score !== null && item.score !== undefined ? `${item.score}/5` : 'Not Scored'}
                       </div>
-                      <div className="text-xs text-gray-500">Score (1-5)</div>
+                      <div className="text-xs text-gray-500">
+                        {item.score !== null && item.score !== undefined ? 'AI Score' : 'Pending Analysis'}
+                      </div>
                     </div>
                   </div>
                   {item.comments && (
                     <div className="mt-3 space-y-2">
-                      <h5 className="text-sm font-medium text-gray-700">Audit Details:</h5>
+                      <h5 className="text-sm font-medium text-gray-700">Auditor Comments:</h5>
                       <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
                         <p className="text-sm text-gray-800 whitespace-pre-line">{item.comments}</p>
                       </div>
                     </div>
                   )}
-                  {item.photos && (
-                    <div className="mt-3">
+                  {item.aiAnalysis && (
+                    <div className="mt-3 space-y-2">
+                      <h5 className="text-sm font-medium text-gray-700">AI Analysis:</h5>
+                      <div className="p-3 bg-purple-50 border-l-4 border-purple-400 rounded">
+                        <p className="text-sm text-gray-800 whitespace-pre-line">{item.aiAnalysis}</p>
+                      </div>
+                    </div>
+                  )}
+                  {!item.comments && !item.aiAnalysis && (
+                    <div className="mt-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded">
+                      <p className="text-sm text-gray-600 italic">No details available for this audit item</p>
+                    </div>
+                  )}
+                  <div className="mt-3">
+                    {item.photos && item.photos !== '[]' && item.photos !== 'null' ? (
                       <div className="flex items-center justify-between">
                         <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                           <Eye className="w-3 h-3 mr-1" />
@@ -228,8 +245,13 @@ function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number
                           Files: {JSON.parse(item.photos || '[]').join(', ')}
                         </span>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                        <Eye className="w-3 h-3 mr-1" />
+                        No photo evidence provided
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
