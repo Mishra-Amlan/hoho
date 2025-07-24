@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Audit, AuditItem } from "@shared/schema";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 interface AIAnalysisResult {
   overallScore: number;
