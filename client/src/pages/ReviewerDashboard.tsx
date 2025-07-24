@@ -110,35 +110,7 @@ export default function ReviewerDashboard() {
     }
   };
 
-  const handleRejectAudit = async () => {
-    if (!selectedAudit) return;
-    
-    try {
-      await updateAudit.mutateAsync({
-        id: selectedAudit.id,
-        status: 'needs_revision',
-        reviewedAt: new Date().toISOString(),
-        findings: reviewNotes || 'Audit requires revision before approval'
-      });
-      
-      toast({
-        title: "Audit Rejected",
-        description: "The audit has been sent back for revision.",
-      });
-      
-      // Reset selection
-      setSelectedAuditId(null);
-      setReviewNotes('');
-      setScoreOverrides({});
-    } catch (error) {
-      console.error('Rejection error:', error);
-      toast({
-        title: "Rejection Failed",
-        description: "Unable to reject audit. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+
 
   // AI Analysis mutation
   const analyzeAudit = useMutation({
@@ -798,20 +770,10 @@ export default function ReviewerDashboard() {
                           </div>
                         )}
                         
-                        <div className="flex space-x-4 pt-6 border-t">
-                          <Button
-                            onClick={handleRejectAudit}
-                            variant="outline"
-                            className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
-                            disabled={updateAudit.isPending}
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            {updateAudit.isPending ? 'Processing...' : 'Reject & Send Back'}
-                          </Button>
-                          
+                        <div className="flex justify-center pt-6 border-t">
                           <Button
                             onClick={handleApproveAudit}
-                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            className="px-8 bg-green-600 hover:bg-green-700"
                             disabled={updateAudit.isPending || !isAIAnalysisComplete()}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />

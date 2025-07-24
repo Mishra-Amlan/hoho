@@ -427,7 +427,7 @@ export default function AdminDashboard() {
   const pendingAudits = audits.filter((audit: any) => audit.status === 'scheduled' || audit.status === 'in_progress').length;
   const submittedAudits = audits.filter((audit: any) => audit.status === 'submitted').length;
   const completedAudits = audits.filter((audit: any) => audit.status === 'approved').length;
-  const rejectedAudits = audits.filter((audit: any) => audit.status === 'needs_revision').length;
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -439,8 +439,7 @@ export default function AdminDashboard() {
         return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Submitted</Badge>;
       case 'approved':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
-      case 'needs_revision':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Needs Revision</Badge>;
+
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -476,8 +475,7 @@ export default function AdminDashboard() {
         return audits.filter((audit: any) => audit.status === 'submitted');
       case 'completed':
         return audits.filter((audit: any) => audit.status === 'approved');
-      case 'rejected':
-        return audits.filter((audit: any) => audit.status === 'needs_revision');
+
       default:
         return audits;
     }
@@ -753,21 +751,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => handleTileClick('rejected')}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <XCircle className="h-8 w-8 text-red-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Need Revision</p>
-                  <p className="text-2xl font-bold text-gray-900">{rejectedAudits}</p>
-                  <p className="text-xs text-red-600 mt-1">View rejected →</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Main Content Tabs */}
@@ -788,7 +772,7 @@ export default function AdminDashboard() {
                      auditFilter === 'pending' ? 'Pending Audits' :
                      auditFilter === 'submitted' ? 'Submitted Audits' :
                      auditFilter === 'completed' ? 'Completed Audits' :
-                     auditFilter === 'rejected' ? 'Audits Needing Revision' : 'Recent Audits'}
+                     'Recent Audits'}
                   </CardTitle>
                   <div className="flex space-x-2">
                     <Button
@@ -1006,10 +990,7 @@ export default function AdminDashboard() {
                       <span className="text-sm text-gray-600">Approved</span>
                       <span className="font-semibold">{completedAudits}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Needs Revision</span>
-                      <span className="font-semibold">{rejectedAudits}</span>
-                    </div>
+
                   </div>
                 </CardContent>
               </Card>
