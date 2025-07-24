@@ -12,6 +12,8 @@ export async function seedDatabase() {
       return;
     }
 
+    console.log("Creating demo users...");
+
     // Create demo users for each role
     await db.insert(users).values([
       {
