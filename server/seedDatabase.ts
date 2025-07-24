@@ -126,6 +126,7 @@ export async function seedDatabase() {
         item: 'Lobby cleanliness standards',
         score: 4,
         comments: 'Very good overall, minor improvements needed in corners',
+        aiAnalysis: 'Good performance with attention to detail. Recommend focusing on corner areas for consistent cleanliness standards.',
         photos: null,
         status: 'completed'
       },
@@ -135,6 +136,7 @@ export async function seedDatabase() {
         item: 'Logo placement compliance',
         score: 3,
         comments: 'Some inconsistencies with brand guidelines',
+        aiAnalysis: 'Moderate compliance with brand standards. Several placement inconsistencies identified that require attention.',
         photos: null,
         status: 'completed'
       },
@@ -143,7 +145,8 @@ export async function seedDatabase() {
         category: 'Operational',
         item: 'Staff uniform compliance',
         score: null,
-        comments: null,
+        comments: 'Item pending auditor completion',
+        aiAnalysis: null,
         photos: null,
         status: 'pending'
       }

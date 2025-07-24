@@ -49,6 +49,7 @@ export const auditItems = pgTable("audit_items", {
   item: text("item").notNull(),
   score: integer("score"),
   comments: text("comments"),
+  aiAnalysis: text("ai_analysis"), // AI-generated analysis and insights
   photos: text("photos"), // JSON as text
   status: text("status").default('pending'), // 'pending', 'completed'
 });

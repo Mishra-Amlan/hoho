@@ -331,12 +331,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/audit-items/:itemId", async (req, res) => {
     try {
       const itemId = parseInt(req.params.itemId);
-      const { score, comments, reviewerNotes } = req.body;
+      const { score, comments, reviewerNotes, aiAnalysis } = req.body;
       
       const updatedItem = await storage.updateAuditItem(itemId, {
         score,
         comments: comments || undefined,
-        // Store reviewer notes in a new field if needed
+        aiAnalysis: aiAnalysis || undefined,
       });
       
       res.json(updatedItem);

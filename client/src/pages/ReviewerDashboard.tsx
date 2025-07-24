@@ -42,6 +42,25 @@ export default function ReviewerDashboard() {
     if (!selectedAudit) return;
     
     try {
+      // First, save all AI-generated scores to audit items
+      const savePromises = auditItems.map(async (item: any) => {
+        const aiResult = aiAnalysisResults[item.id];
+        if (aiResult && aiResult.score !== undefined) {
+          await fetch(`/api/audit-items/${item.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              score: aiResult.score,
+              aiAnalysis: aiResult.aiAnalysis 
+            })
+          });
+        }
+      });
+      
+      // Wait for all item scores to be saved
+      await Promise.all(savePromises);
+      
+      // Then approve the audit
       await updateAudit.mutateAsync({
         id: selectedAudit.id,
         status: 'approved',
@@ -52,13 +71,14 @@ export default function ReviewerDashboard() {
       
       toast({
         title: "Audit Approved",
-        description: "The audit has been approved and marked as complete.",
+        description: "The audit has been approved with AI scores saved to database.",
       });
       
       // Reset selection to next pending audit
       setSelectedAuditId(null);
       setReviewNotes('');
       setScoreOverrides({});
+      setAiAnalysisResults({});
     } catch (error) {
       console.error('Approval error:', error);
       toast({
