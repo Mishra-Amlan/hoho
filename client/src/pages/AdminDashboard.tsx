@@ -225,7 +225,32 @@ function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number
                     <div className="mt-3 space-y-2">
                       <h5 className="text-sm font-medium text-gray-700">AI Analysis:</h5>
                       <div className="p-3 bg-purple-50 border-l-4 border-purple-400 rounded">
-                        <p className="text-sm text-gray-800 whitespace-pre-line">{item.aiAnalysis}</p>
+                        <p className="text-sm text-gray-800">
+                          {item.aiAnalysis.length > 200 
+                            ? `${item.aiAnalysis.substring(0, 200)}...` 
+                            : item.aiAnalysis}
+                        </p>
+                        {item.aiAnalysis.length > 200 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="mt-2 p-0 h-auto text-purple-600 hover:text-purple-800"
+                            onClick={() => {
+                              // Toggle full text display
+                              const fullTextElement = document.getElementById(`analysis-${item.id}`);
+                              if (fullTextElement) {
+                                fullTextElement.style.display = fullTextElement.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }}
+                          >
+                            Show full analysis
+                          </Button>
+                        )}
+                        {item.aiAnalysis.length > 200 && (
+                          <div id={`analysis-${item.id}`} style={{ display: 'none' }} className="mt-2 pt-2 border-t border-purple-200">
+                            <p className="text-sm text-gray-800 whitespace-pre-line">{item.aiAnalysis}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
