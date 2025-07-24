@@ -16,7 +16,7 @@ export default function AuditorDashboard() {
   const { toast } = useToast();
   const [draftNotes, setDraftNotes] = useState('');
   const [selectedChecklistItem, setSelectedChecklistItem] = useState<ChecklistItem | null>(null);
-  const [itemScores, setItemScores] = useState<Record<string, { score: number | null; comments: string; media: any[] }>>({});
+  const [itemData, setItemData] = useState<Record<string, { comments: string; media: any[] }>>({});
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [currentMediaType, setCurrentMediaType] = useState<'photo' | 'video' | 'text'>('photo');
 
@@ -72,10 +72,11 @@ export default function AuditorDashboard() {
   };
 
   const handleMediaCapture = (itemId: string, mediaType: 'photo' | 'video' | 'text', content: any) => {
-    setItemScores(prev => ({
+    setItemData(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
+        comments: prev[itemId]?.comments || '',
         media: [
           ...(prev[itemId]?.media || []),
           { type: mediaType, content, timestamp: new Date().toISOString() }
@@ -84,21 +85,21 @@ export default function AuditorDashboard() {
     }));
   };
 
-  const handleScoreChange = (itemId: string, score: number, comments: string) => {
-    setItemScores(prev => ({
+  const handleCommentsChange = (itemId: string, comments: string) => {
+    setItemData(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        score,
-        comments
+        comments,
+        media: prev[itemId]?.media || []
       }
     }));
   };
 
-  const getItemScore = (itemId: string) => itemScores[itemId] || { score: null, comments: '', media: [] };
+  const getItemData = (itemId: string) => itemData[itemId] || { comments: '', media: [] };
   
   const getCompletedItemsCount = () => {
-    return Object.values(itemScores).filter(item => item.score !== null).length;
+    return Object.values(itemData).filter(item => item.comments.trim() !== '' || item.media.length > 0).length;
   };
 
   const getTotalItemsCount = () => {
@@ -183,7 +184,10 @@ export default function AuditorDashboard() {
                   </div>
                   
                   {HOTEL_AUDIT_CHECKLIST.map((category) => {
-                    const categoryCompleted = category.items.filter(item => getItemScore(item.id).score !== null).length;
+                    const categoryCompleted = category.items.filter(item => {
+                      const data = getItemData(item.id);
+                      return data.comments.trim() !== '' || data.media.length > 0;
+                    }).length;
                     const categoryProgress = category.items.length > 0 ? (categoryCompleted / category.items.length) * 100 : 0;
                     
                     return (
@@ -212,41 +216,27 @@ export default function AuditorDashboard() {
                 <CardTitle className="flex items-center justify-between">
                   <span>{category.name}</span>
                   <span className="text-sm text-gray-500">
-                    {category.items.filter(item => getItemScore(item.id).score !== null).length}/{category.items.length} completed
+                    {category.items.filter(item => {
+                      const data = getItemData(item.id);
+                      return data.comments.trim() !== '' || data.media.length > 0;
+                    }).length}/{category.items.length} completed
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {category.items.map((item) => {
-                    const itemData = getItemScore(item.id);
+                    const currentItemData = getItemData(item.id);
                     return (
                       <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-4">
+                        <div className="mb-4">
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-900 mb-1">{item.item}</h3>
                             <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Max Score: {item.maxScore}</span>
-                              <span className="text-xs text-gray-500">Weight: {item.weight}</span>
+                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">Weight: {item.weight}</span>
+                              <span className="text-xs text-gray-500">AI will score this item during review</span>
                             </div>
-                          </div>
-                          <div className="ml-4">
-                            <Select 
-                              value={itemData.score?.toString() || ''} 
-                              onValueChange={(value) => handleScoreChange(item.id, parseInt(value), itemData.comments)}
-                            >
-                              <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Select Score" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from({ length: item.maxScore }, (_, i) => i + 1).map((score) => (
-                                  <SelectItem key={score} value={score.toString()}>
-                                    {score}/{item.maxScore}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
                         
@@ -320,9 +310,9 @@ export default function AuditorDashboard() {
                           </div>
                           
                           {/* Display collected media */}
-                          {itemData.media.length > 0 && (
+                          {currentItemData.media.length > 0 && (
                             <div className="grid grid-cols-3 gap-2 mb-4">
-                              {itemData.media.map((media: any, index: number) => (
+                              {currentItemData.media.map((media: any, index: number) => (
                                 <div key={index} className="border rounded p-2 bg-gray-50">
                                   <div className="text-xs text-gray-600 mb-1">
                                     {media.type === 'photo' && '📷 Photo'}
@@ -343,12 +333,15 @@ export default function AuditorDashboard() {
 
                         {/* Comments */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Auditor Comments</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Auditor Observations & Comments
+                            <span className="text-xs text-blue-600 ml-2">(Required for AI scoring)</span>
+                          </label>
                           <Textarea 
                             rows={3} 
-                            value={itemData.comments}
-                            onChange={(e) => handleScoreChange(item.id, itemData.score || 0, e.target.value)}
-                            placeholder="Add your observations and comments..."
+                            value={currentItemData.comments}
+                            onChange={(e) => handleCommentsChange(item.id, e.target.value)}
+                            placeholder="Describe what you observed for this item. Be specific about compliance, cleanliness, staff behavior, etc. The AI will use these observations to generate an accurate score."
                           />
                         </div>
                       </div>
