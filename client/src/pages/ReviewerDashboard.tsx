@@ -38,6 +38,27 @@ export default function ReviewerDashboard() {
   // Fetch audit items for selected audit
   const { data: auditItems = [] } = useAuditItems(selectedAudit?.id);
 
+  // Check if AI analysis is complete for the audit
+  const isAIAnalysisComplete = () => {
+    if (!selectedAudit || !auditItems.length) return false;
+    
+    // Check if overall audit analysis is complete (audit has AI-generated scores)
+    const hasOverallAnalysis = selectedAudit.overallScore && 
+                              selectedAudit.cleanlinessScore && 
+                              selectedAudit.brandingScore && 
+                              selectedAudit.operationalScore;
+    
+    // Check if individual item analysis is complete
+    const completedItemsCount = auditItems.filter((item: any) => 
+      aiAnalysisResults[item.id] && aiAnalysisResults[item.id].aiAnalysis
+    ).length;
+    
+    const totalItemsWithData = auditItems.filter((item: any) => item.comments || item.photos).length;
+    
+    // AI analysis is complete if we have overall analysis OR most individual items are analyzed
+    return hasOverallAnalysis || (totalItemsWithData > 0 && completedItemsCount >= totalItemsWithData * 0.8);
+  };
+
   const handleApproveAudit = async () => {
     if (!selectedAudit) return;
     
@@ -761,6 +782,22 @@ export default function ReviewerDashboard() {
                           </div>
                         </div>
                         
+                        {/* AI Analysis Status Indicator */}
+                        {!isAIAnalysisComplete() && (
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+                            <div className="flex items-center">
+                              <AlertTriangle className="h-5 w-5 text-amber-600 mr-2" />
+                              <div>
+                                <h4 className="font-medium text-amber-800">AI Analysis Required</h4>
+                                <p className="text-sm text-amber-700">
+                                  Please run AI analysis on audit items before approval. 
+                                  Go to the "AI Analysis" tab to analyze individual items or run overall audit analysis.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="flex space-x-4 pt-6 border-t">
                           <Button
                             onClick={handleRejectAudit}
@@ -775,10 +812,11 @@ export default function ReviewerDashboard() {
                           <Button
                             onClick={handleApproveAudit}
                             className="flex-1 bg-green-600 hover:bg-green-700"
-                            disabled={updateAudit.isPending}
+                            disabled={updateAudit.isPending || !isAIAnalysisComplete()}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            {updateAudit.isPending ? 'Processing...' : 'Approve Audit'}
+                            {updateAudit.isPending ? 'Processing...' : 
+                             !isAIAnalysisComplete() ? 'Complete AI Analysis First' : 'Approve Audit'}
                           </Button>
                         </div>
                       </div>
