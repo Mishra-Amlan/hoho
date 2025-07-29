@@ -57,7 +57,7 @@ export function CorrectiveActionPlan({ auditId, propertyName, auditScore, trigge
     setIsGenerating(true);
     setError(null);
     try {
-      const response = await apiRequest(`/api/audits/${auditId}/action-plan`, {
+      const response = await fetch(`/api/audits/${auditId}/action-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
