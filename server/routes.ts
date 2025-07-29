@@ -527,6 +527,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync audit scores - ensures all dashboards show consistent real-time scores
+  app.post('/api/audits/:id/sync-scores', async (req, res) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      const updatedAudit = await recalculateAuditScores(auditId);
+      
+      if (!updatedAudit) {
+        return res.status(400).json({ error: 'No scored items found or audit not found' });
+      }
+      
+      res.json({
+        success: true,
+        scores: {
+          overall: updatedAudit.overallScore,
+          cleanliness: updatedAudit.cleanlinessScore,
+          branding: updatedAudit.brandingScore,
+          operational: updatedAudit.operationalScore,
+          complianceZone: updatedAudit.complianceZone
+        },
+        audit: updatedAudit
+      });
+    } catch (error) {
+      console.error('Sync scores error:', error);
+      res.status(500).json({ error: 'Failed to sync scores' });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });

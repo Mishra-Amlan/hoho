@@ -142,11 +142,23 @@ export default function ReviewerDashboard() {
       if (!response.ok) throw new Error('Analysis failed');
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast({
         title: "AI Analysis Complete",
         description: "The audit has been analyzed and scored by AI.",
       });
+      
+      // Sync scores to ensure all dashboards show updated values
+      if (selectedAudit?.id) {
+        try {
+          await fetch(`/api/audits/${selectedAudit.id}/sync-scores`, {
+            method: 'POST',
+          });
+        } catch (error) {
+          console.error('Score sync error:', error);
+        }
+      }
+      
       // Instead of hard refresh, invalidate the cache to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/audits'] });
       queryClient.invalidateQueries({ queryKey: ['/api/audits', selectedAudit?.id, 'items'] });
@@ -219,7 +231,7 @@ export default function ReviewerDashboard() {
       const response = await fetch(`/api/audit-items/${itemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score: newScore })
+        body: JSON.stringify({ score: newScore, auditId: selectedAudit?.id })
       });
       
       if (!response.ok) throw new Error('Update failed');
@@ -232,6 +244,16 @@ export default function ReviewerDashboard() {
           isOverridden: true
         }
       }));
+      
+      // Sync scores to ensure all dashboards show updated values
+      if (selectedAudit?.id) {
+        await fetch(`/api/audits/${selectedAudit.id}/sync-scores`, {
+          method: 'POST',
+        });
+        
+        // Invalidate cache to refresh all dashboard data
+        queryClient.invalidateQueries({ queryKey: ['/api/audits'] });
+      }
       
       toast({
         title: "Score Updated",
@@ -259,6 +281,17 @@ export default function ReviewerDashboard() {
       
       // Step 2: Run overall audit analysis
       await analyzeAudit.mutateAsync(selectedAudit.id);
+      
+      // Step 3: Sync scores to ensure all dashboards show updated values
+      if (selectedAudit?.id) {
+        try {
+          await fetch(`/api/audits/${selectedAudit.id}/sync-scores`, {
+            method: 'POST',
+          });
+        } catch (error) {
+          console.error('Score sync error:', error);
+        }
+      }
       
       toast({
         title: "Comprehensive Analysis Complete",

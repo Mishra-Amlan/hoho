@@ -72,9 +72,7 @@ export default function HotelGMDashboard() {
     operational: latestAudit?.operationalScore || 0
   };
 
-  // Debug log to verify real-time data
-  console.log('Real-time audit results:', auditResults);
-  console.log('Latest audit data:', latestAudit);
+
 
   // Generate findings from real audit data
   const findings = [
