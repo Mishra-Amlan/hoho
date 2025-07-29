@@ -94,6 +94,7 @@ export const insertAuditSchema = createInsertSchema(audits).pick({
   reviewerId: true,
   hotelGroupId: true,
   sop: true,
+  sopFiles: true,
 });
 
 export const insertAuditItemSchema = createInsertSchema(auditItems).pick({

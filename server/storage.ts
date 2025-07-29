@@ -385,6 +385,7 @@ export class MemStorage implements IStorage {
       id,
       auditorId: insertAudit.auditorId || null,
       reviewerId: insertAudit.reviewerId || null,
+      hotelGroupId: insertAudit.hotelGroupId || null,
       sop: insertAudit.sop || null,
       sopFiles: insertAudit.sopFiles || null,
       status: 'scheduled',
