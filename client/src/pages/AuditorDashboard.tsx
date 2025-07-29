@@ -162,6 +162,16 @@ export default function AuditorDashboard() {
     }));
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleCommentsChange = (itemId: string, comments: string) => {
     setItemData(prev => ({
       ...prev,
@@ -330,9 +340,21 @@ export default function AuditorDashboard() {
           .flatMap(cat => cat.items)
           .find(ci => ci.id === checklistItemId)?.item
       );
+      
+      let media = [];
+      if (auditItem?.photos) {
+        try {
+          // Parse the photos JSON which contains our base64 images and other media
+          media = JSON.parse(auditItem.photos);
+        } catch (e) {
+          console.error('Error parsing audit item photos:', e);
+          media = [];
+        }
+      }
+      
       return auditItem ? {
         comments: auditItem.comments || '',
-        media: auditItem.photos ? JSON.parse(auditItem.photos) : [],
+        media: media,
         score: auditItem.score,
         status: auditItem.status
       } : { comments: '', media: [], score: undefined, status: 'pending' };
@@ -458,10 +480,24 @@ export default function AuditorDashboard() {
                                     const input = document.createElement('input');
                                     input.type = 'file';
                                     input.accept = 'image/*';
-                                    input.onchange = (e) => {
+                                    input.onchange = async (e) => {
                                       const file = (e.target as HTMLInputElement).files?.[0];
                                       if (file) {
-                                        handleMediaCapture(item.id, 'photo', URL.createObjectURL(file));
+                                        try {
+                                          // Convert file to base64 for persistent storage
+                                          const base64 = await fileToBase64(file);
+                                          handleMediaCapture(item.id, 'photo', base64);
+                                          toast({
+                                            title: "Photo Captured",
+                                            description: "Photo has been saved to the audit.",
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to process the image.",
+                                            variant: "destructive"
+                                          });
+                                        }
                                       }
                                     };
                                     input.click();
@@ -481,10 +517,24 @@ export default function AuditorDashboard() {
                                     const input = document.createElement('input');
                                     input.type = 'file';
                                     input.accept = 'video/*';
-                                    input.onchange = (e) => {
+                                    input.onchange = async (e) => {
                                       const file = (e.target as HTMLInputElement).files?.[0];
                                       if (file) {
-                                        handleMediaCapture(item.id, 'video', URL.createObjectURL(file));
+                                        try {
+                                          // Convert file to base64 for persistent storage
+                                          const base64 = await fileToBase64(file);
+                                          handleMediaCapture(item.id, 'video', base64);
+                                          toast({
+                                            title: "Video Captured",
+                                            description: "Video has been saved to the audit.",
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to process the video.",
+                                            variant: "destructive"
+                                          });
+                                        }
                                       }
                                     };
                                     input.click();
@@ -530,6 +580,9 @@ export default function AuditorDashboard() {
                                     )}
                                     {media.type === 'photo' && (
                                       <img src={media.content} alt="Evidence" className="w-full h-16 object-cover rounded" />
+                                    )}
+                                    {media.type === 'video' && (
+                                      <video src={media.content} className="w-full h-16 object-cover rounded" controls />
                                     )}
                                   </div>
                                 ))}

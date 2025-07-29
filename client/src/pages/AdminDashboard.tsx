@@ -269,21 +269,71 @@ function ApprovedAuditDetails({ auditId, audits, properties }: { auditId: number
                       <p className="text-sm text-gray-600 italic">No details available for this audit item</p>
                     </div>
                   )}
+                  {/* Display persisted images and media */}
                   <div className="mt-3">
                     {item.photos && item.photos !== '[]' && item.photos !== 'null' ? (
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                          <Eye className="w-3 h-3 mr-1" />
-                          Photo Evidence: {JSON.parse(item.photos || '[]').length} images
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          Files: {JSON.parse(item.photos || '[]').join(', ')}
-                        </span>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                            <Eye className="w-3 h-3 mr-1" />
+                            Evidence Provided
+                          </Badge>
+                        </div>
+                        {(() => {
+                          try {
+                            const media = JSON.parse(item.photos);
+                            return (
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {media.map((mediaItem: any, index: number) => (
+                                  <div key={index} className="border rounded-lg p-2 bg-white">
+                                    <div className="text-xs text-gray-600 mb-2">
+                                      {mediaItem.type === 'photo' && '📷 Photo'}
+                                      {mediaItem.type === 'video' && '📹 Video'}
+                                      {mediaItem.type === 'text' && '📝 Text Note'}
+                                      {mediaItem.timestamp && (
+                                        <span className="ml-2">
+                                          {new Date(mediaItem.timestamp).toLocaleTimeString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {mediaItem.type === 'photo' && (
+                                      <img 
+                                        src={mediaItem.content} 
+                                        alt="Audit Evidence" 
+                                        className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-75" 
+                                        onClick={() => window.open(mediaItem.content, '_blank')}
+                                      />
+                                    )}
+                                    {mediaItem.type === 'video' && (
+                                      <video 
+                                        src={mediaItem.content} 
+                                        className="w-full h-24 object-cover rounded" 
+                                        controls 
+                                      />
+                                    )}
+                                    {mediaItem.type === 'text' && (
+                                      <p className="text-sm text-gray-800 p-2 bg-gray-50 rounded">
+                                        {mediaItem.content}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          } catch (e) {
+                            console.error('Error parsing audit photos:', e);
+                            return (
+                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                <p className="text-sm text-yellow-700">Unable to display evidence</p>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                     ) : (
                       <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
                         <Eye className="w-3 h-3 mr-1" />
-                        No photo evidence provided
+                        No evidence provided
                       </Badge>
                     )}
                   </div>

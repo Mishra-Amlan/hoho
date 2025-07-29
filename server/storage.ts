@@ -312,8 +312,10 @@ export class MemStorage implements IStorage {
   async createHotelGroup(insertHotelGroup: InsertHotelGroup): Promise<HotelGroup> {
     const id = this.currentHotelGroupId++;
     const hotelGroup: HotelGroup = { 
-      ...insertHotelGroup, 
+      ...insertHotelGroup,
       id,
+      sop: insertHotelGroup.sop || null,
+      sopFiles: insertHotelGroup.sopFiles || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -344,6 +346,7 @@ export class MemStorage implements IStorage {
     const property: Property = {
       ...insertProperty,
       id,
+      hotelGroupId: insertProperty.hotelGroupId || null,
       image: insertProperty.image || null,
       lastAuditScore: Math.floor(Math.random() * 40) + 60, // 60-100
       nextAuditDate: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000), // Within 90 days
@@ -382,6 +385,8 @@ export class MemStorage implements IStorage {
       id,
       auditorId: insertAudit.auditorId || null,
       reviewerId: insertAudit.reviewerId || null,
+      sop: insertAudit.sop || null,
+      sopFiles: insertAudit.sopFiles || null,
       status: 'scheduled',
       overallScore: null,
       cleanlinessScore: null,

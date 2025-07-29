@@ -276,10 +276,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/audits/:auditId/items", async (req, res) => {
     try {
       const auditId = parseInt(req.params.auditId);
-      const itemData = { ...req.body, auditId };
+      const { mediaAttachments, ...restData } = req.body;
+      
+      // Convert mediaAttachments to photos field (JSON string)
+      const photos = mediaAttachments && mediaAttachments.length > 0 
+        ? JSON.stringify(mediaAttachments) 
+        : null;
+      
+      const itemData = { 
+        ...restData, 
+        auditId,
+        photos,
+        status: 'completed'
+      };
+      
       const item = await storage.createAuditItem(itemData);
       res.json(item);
     } catch (error) {
+      console.error('Failed to create audit item:', error);
       res.status(500).json({ message: "Failed to create audit item" });
     }
   });
