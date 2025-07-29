@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Building } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -76,15 +77,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen gradient-bg luxury-pattern flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-6">
         {/* Header */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <i className="fas fa-hotel text-4xl text-blue-600 mr-3"></i>
-            <h1 className="text-3xl font-bold text-gray-800">Hotel Audit Platform</h1>
+            <Building className="h-12 w-12 text-white mr-3 drop-shadow-lg" />
+            <h1 className="text-4xl font-bold text-white drop-shadow-lg">Hotel Audit Platform</h1>
           </div>
-          <p className="text-gray-600">Sign in to access your dashboard</p>
+          <p className="text-white/90 drop-shadow text-lg">Sign in to access your dashboard</p>
         </div>
 
         {/* Login Form */}

@@ -3,26 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 100%);
+  --background: hsl(220, 20%, 97%);
   --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
+  --muted: hsl(220, 14.3%, 95.9%);
   --muted-foreground: hsl(25, 5.3%, 44.7%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(20, 14.3%, 4.1%);
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(60, 4.8%, 95.9%);
+  --border: hsl(220, 13%, 91%);
+  --input: hsl(220, 13%, 91%);
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(220, 14.3%, 95.9%);
   --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
+  --accent: hsl(220, 14.3%, 95.9%);
   --accent-foreground: hsl(24, 9.8%, 10%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
-  --radius: 0.5rem;
+  --ring: hsl(221, 83%, 53%);
+  --radius: 0.75rem;
 
   /* Role-specific colors */
   --admin-color: hsl(20, 100%, 60%);
@@ -61,7 +61,9 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
   }
 
   /* Custom scrollbar */
@@ -86,66 +88,114 @@
 @layer components {
   /* Enhanced gradient backgrounds */
   .gradient-bg {
-    @apply bg-gradient-to-br from-blue-50 via-white to-purple-50;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+  }
+  
+  .gradient-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   }
   
   .gradient-primary {
-    @apply bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   }
   
   .gradient-success {
-    @apply bg-gradient-to-r from-green-500 to-emerald-500;
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   }
   
   .gradient-warning {
-    @apply bg-gradient-to-r from-yellow-500 to-orange-500;
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
   }
   
   .gradient-danger {
-    @apply bg-gradient-to-r from-red-500 to-pink-500;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl;
+  }
+  
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-md border border-white/30 rounded-2xl shadow-2xl transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply bg-white/95 transform translate-y-[-2px];
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 
   /* Enhanced card styles */
   .card-modern {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg transition-all duration-300;
+    @apply bg-white/95 backdrop-blur-sm border border-white/30 rounded-2xl shadow-xl transition-all duration-300;
   }
   
   .card-hover {
-    @apply hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300;
+    @apply hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300;
   }
   
   /* Button enhancements */
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    @apply text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0;
   }
   
   .btn-success {
-    @apply bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105;
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    @apply text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0;
   }
   
   .btn-warning {
-    @apply bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105;
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    @apply text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0;
   }
 
-  /* Role-specific utility classes */
-  .role-admin {
-    @apply border-orange-500 bg-gradient-to-r from-orange-50 to-red-50;
+  /* Dashboard specific styles */
+  .dashboard-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+  }
+  
+  .admin-bg {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  }
+  
+  .auditor-bg {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  }
+  
+  .reviewer-bg {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  }
+  
+  .corporate-bg {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  }
+  
+  .hotelgm-bg {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   }
 
-  .role-auditor {
-    @apply border-green-500 bg-gradient-to-r from-green-50 to-emerald-50;
+  /* Animated background patterns */
+  .animated-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
-  .role-reviewer {
-    @apply border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50;
-  }
-
-  .role-corporate {
-    @apply border-amber-500 bg-gradient-to-r from-amber-50 to-yellow-50;
-  }
-
-  .role-hotelgm {
-    @apply border-blue-600 bg-gradient-to-r from-blue-50 to-cyan-50;
+  /* Hotel luxury theme */
+  .luxury-pattern {
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.15) 0%, transparent 50%);
   }
 
   /* Loading animations */
