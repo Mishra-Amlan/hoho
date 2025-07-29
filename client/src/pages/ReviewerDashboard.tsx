@@ -278,13 +278,30 @@ export default function ReviewerDashboard() {
   const calculateOverallScore = () => {
     if (!auditItems.length) return 0;
     
-    const totalScore = auditItems.reduce((sum: number, item: any) => {
+    // Get items that have been analyzed (have AI results or existing scores)
+    const analyzedItems = auditItems.filter((item: any) => {
+      const aiResult = aiAnalysisResults[item.id];
+      return aiResult || item.score;
+    });
+    
+    if (analyzedItems.length === 0) return 0;
+    
+    const totalScore = analyzedItems.reduce((sum: number, item: any) => {
       const aiResult = aiAnalysisResults[item.id];
       const score = aiResult ? aiResult.score : (item.score || 0);
       return sum + score;
     }, 0);
     
-    return Math.round((totalScore / (auditItems.length * 5)) * 100);
+    // Calculate percentage based on analyzed items only
+    return Math.round((totalScore / (analyzedItems.length * 5)) * 100);
+  };
+
+  // Get count of analyzed items for display
+  const getAnalyzedItemsCount = () => {
+    return auditItems.filter((item: any) => {
+      const aiResult = aiAnalysisResults[item.id];
+      return aiResult || item.score;
+    }).length;
   };
 
   const getStatusBadge = (status: string) => {
@@ -723,14 +740,26 @@ export default function ReviewerDashboard() {
                           </div>
                         ))}
                         
-                        {auditItems.length > 0 && (
+                        {auditItems.length > 0 && getAnalyzedItemsCount() > 0 && (
                           <div className="p-4 bg-green-50 rounded-lg">
                             <h4 className="font-medium text-green-800 mb-2">Overall Calculated Score</h4>
                             <div className="flex items-center justify-between">
-                              <span className="text-green-700">Based on individual item scores:</span>
+                              <span className="text-green-700">Based on {getAnalyzedItemsCount()} analyzed items:</span>
                               <span className="text-2xl font-bold text-green-800">{calculateOverallScore()}/100</span>
                             </div>
                             <Progress value={calculateOverallScore()} className="h-3 mt-2" />
+                            <p className="text-xs text-green-600 mt-1">
+                              {getAnalyzedItemsCount()} of {auditItems.length} items analyzed
+                            </p>
+                          </div>
+                        )}
+                        
+                        {auditItems.length > 0 && getAnalyzedItemsCount() === 0 && (
+                          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                            <h4 className="font-medium text-amber-800 mb-2">No Items Analyzed Yet</h4>
+                            <p className="text-amber-700 text-sm">
+                              Click "Run AI Analysis" to analyze individual items and calculate the overall score.
+                            </p>
                           </div>
                         )}
                       </div>
