@@ -98,27 +98,30 @@ export default function CorporateDashboard() {
 
   const regionalData = regionalPerformanceData();
 
-  // Get detailed property data for export and details view
+  // Get detailed property data for export and details view - only properties with submitted audits
   const getDetailedPropertyData = () => {
-    return (properties as any[]).map((property: any) => {
-      const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id && audit.status === 'approved');
-      const latestAudit = propertyAudits.sort((a: any, b: any) => 
-        new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
-      )[0];
-      
-      return {
-        ...property,
-        totalAudits: propertyAudits.length,
-        latestScore: latestAudit?.overallScore || 0,
-        latestCleanliness: latestAudit?.cleanlinessScore || 0,
-        latestBranding: latestAudit?.brandingScore || 0,
-        latestOperational: latestAudit?.operationalScore || 0,
-        complianceZone: latestAudit?.complianceZone || 'unknown',
-        lastAuditDate: latestAudit ? new Date(latestAudit.submittedAt || latestAudit.createdAt).toLocaleDateString() : 'No audits',
-        findings: latestAudit?.findings || 'No findings available',
-        actionPlan: latestAudit?.actionPlan || 'No action plan available'
-      };
-    });
+    return (properties as any[])
+      .map((property: any) => {
+        const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id && audit.status === 'approved');
+        const latestAudit = propertyAudits.sort((a: any, b: any) => 
+          new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
+        )[0];
+        
+        return {
+          ...property,
+          totalAudits: propertyAudits.length,
+          latestScore: latestAudit?.overallScore || 0,
+          latestCleanliness: latestAudit?.cleanlinessScore || 0,
+          latestBranding: latestAudit?.brandingScore || 0,
+          latestOperational: latestAudit?.operationalScore || 0,
+          complianceZone: latestAudit?.complianceZone || 'unknown',
+          lastAuditDate: latestAudit ? new Date(latestAudit.submittedAt || latestAudit.createdAt).toLocaleDateString() : 'No audits',
+          findings: latestAudit?.findings || 'No findings available',
+          actionPlan: latestAudit?.actionPlan || 'No action plan available',
+          hasAudits: propertyAudits.length > 0
+        };
+      })
+      .filter((property: any) => property.hasAudits); // Only show properties with submitted audits
   };
 
   // Get critical properties from real data
@@ -586,31 +589,25 @@ export default function CorporateDashboard() {
             </CardContent>
           </Card>
 
-          {/* Regional Performance */}
+          {/* Quick Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Regional Performance</CardTitle>
+              <CardTitle>Audit Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {regionalData.map((region: any, index: number) => (
-                  <div key={`${region.region}-${index}`} className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{region.region}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`${region.color} h-2 rounded-full`}
-                          style={{ width: `${region.score}%` }}
-                        ></div>
-                      </div>
-                      <span className={`text-sm font-semibold ${
-                        region.score >= 85 ? 'text-green-600' : 'text-yellow-600'
-                      }`}>
-                        {region.score}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">Properties with Audits</span>
+                  <span className="text-2xl font-bold text-blue-600">{getDetailedPropertyData().length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">Total Audits Completed</span>
+                  <span className="text-2xl font-bold text-green-600">{(audits as any[]).filter(a => a.status === 'approved').length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">Average Score</span>
+                  <span className="text-2xl font-bold text-purple-600">{kpiData.overallCompliance}%</span>
+                </div>
               </div>
             </CardContent>
           </Card>
