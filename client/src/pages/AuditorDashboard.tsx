@@ -191,7 +191,7 @@ export default function AuditorDashboard() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen auditor-bg">
+      <div className="min-h-screen bg-yellow-50">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
@@ -205,7 +205,7 @@ export default function AuditorDashboard() {
 
   if (audits.length === 0) {
     return (
-      <div className="min-h-screen auditor-bg">
+      <div className="min-h-screen bg-yellow-50">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
@@ -345,7 +345,7 @@ export default function AuditorDashboard() {
   // If showing checklist view
   if (showAuditChecklist && activeAudit) {
     return (
-      <div className="min-h-screen auditor-bg">
+      <div className="min-h-screen bg-yellow-50">
         <Navigation />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -624,7 +624,7 @@ export default function AuditorDashboard() {
 
   // Default audit list view
   return (
-    <div className="min-h-screen auditor-bg">
+    <div className="min-h-screen bg-yellow-50">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
