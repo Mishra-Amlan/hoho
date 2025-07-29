@@ -509,7 +509,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen admin-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -794,69 +794,69 @@ export default function AdminDashboard() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+          <div 
+            className="metric-card-primary cursor-pointer"
             onClick={() => setActiveTab('properties')}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Building className="h-8 w-8 text-blue-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Properties</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalProperties}</p>
-                  <p className="text-xs text-blue-600 mt-1">View all properties →</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Properties</p>
+                <p className="text-3xl font-bold text-blue-900 mt-2">{totalProperties}</p>
+                <p className="text-xs text-blue-600 mt-1">View all properties →</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-primary">
+                <Building className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+          <div 
+            className="metric-card-warning cursor-pointer"
             onClick={() => handleTileClick('pending')}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Pending Audits</p>
-                  <p className="text-2xl font-bold text-gray-900">{pendingAudits}</p>
-                  <p className="text-xs text-yellow-600 mt-1">View pending →</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Pending Audits</p>
+                <p className="text-3xl font-bold text-amber-900 mt-2">{pendingAudits}</p>
+                <p className="text-xs text-amber-600 mt-1">View pending →</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-warning">
+                <Clock className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+          <div 
+            className="metric-card-purple cursor-pointer"
             onClick={() => handleTileClick('submitted')}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Eye className="h-8 w-8 text-purple-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Awaiting Review</p>
-                  <p className="text-2xl font-bold text-gray-900">{submittedAudits}</p>
-                  <p className="text-xs text-purple-600 mt-1">View submitted →</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-purple-700 uppercase tracking-wide">Awaiting Review</p>
+                <p className="text-3xl font-bold text-purple-900 mt-2">{submittedAudits}</p>
+                <p className="text-xs text-purple-600 mt-1">View submitted →</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-purple">
+                <Eye className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+          <div 
+            className="metric-card-success cursor-pointer"
             onClick={() => handleTileClick('completed')}
           >
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{completedAudits}</p>
-                  <p className="text-xs text-green-600 mt-1">View completed →</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Completed</p>
+                <p className="text-3xl font-bold text-green-900 mt-2">{completedAudits}</p>
+                <p className="text-xs text-green-600 mt-1">View completed →</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-success">
+                <CheckCircle className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
 
         </div>

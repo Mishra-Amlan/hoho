@@ -319,7 +319,7 @@ export default function ReviewerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen reviewer-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -331,53 +331,57 @@ export default function ReviewerDashboard() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900">{pendingAudits.length}</p>
-                </div>
+          <div className="metric-card-warning">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Pending Reviews</p>
+                <p className="text-3xl font-bold text-amber-900 mt-2">{pendingAudits.length}</p>
+                <p className="text-xs text-amber-600 mt-1">Awaiting review</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-warning">
+                <Clock className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Approved Today</p>
-                  <p className="text-2xl font-bold text-gray-900">{allAudits.filter((a: any) => a.status === 'approved').length}</p>
-                </div>
+          <div className="metric-card-success">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Approved Today</p>
+                <p className="text-3xl font-bold text-green-900 mt-2">{allAudits.filter((a: any) => a.status === 'approved').length}</p>
+                <p className="text-xs text-green-600 mt-1">Completed reviews</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-success">
+                <CheckCircle className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Critical Issues</p>
-                  <p className="text-2xl font-bold text-gray-900">{allAudits.filter((a: any) => a.overallScore && a.overallScore < 70).length}</p>
-                </div>
+          <div className="metric-card-danger">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical Issues</p>
+                <p className="text-3xl font-bold text-red-900 mt-2">{allAudits.filter((a: any) => a.overallScore && a.overallScore < 70).length}</p>
+                <p className="text-xs text-red-600 mt-1">Score below 70%</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-danger">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Eye className="h-8 w-8 text-blue-500 mr-3" />
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Audits</p>
-                  <p className="text-2xl font-bold text-gray-900">{allAudits.length}</p>
-                </div>
+          <div className="metric-card-primary">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Audits</p>
+                <p className="text-3xl font-bold text-blue-900 mt-2">{allAudits.length}</p>
+                <p className="text-xs text-blue-600 mt-1">All submissions</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-primary">
+                <Eye className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

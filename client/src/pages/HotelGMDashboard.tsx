@@ -144,7 +144,7 @@ export default function HotelGMDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen hotelgm-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -218,47 +218,43 @@ export default function HotelGMDashboard() {
 
         {/* Property Status Cards - Real-time Data */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Current Score</p>
-                  <p className={`text-3xl font-bold ${propertyStats.currentScore >= 85 ? 'text-green-600' : propertyStats.currentScore >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {propertyStats.currentScore}%
-                  </p>
-                  <p className={`text-xs ${propertyStats.improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {propertyStats.improvement >= 0 ? '↑' : '↓'} {Math.abs(propertyStats.improvement)}% from last audit
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Award className="h-6 w-6 text-green-600" />
-                </div>
+          <div className="metric-card-success">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Current Score</p>
+                <p className={`text-3xl font-bold text-green-900 mt-2 ${propertyStats.currentScore >= 85 ? 'text-green-900' : propertyStats.currentScore >= 70 ? 'text-amber-900' : 'text-red-900'}`}>
+                  {propertyStats.currentScore}%
+                </p>
+                <p className={`text-xs mt-1 ${propertyStats.improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {propertyStats.improvement >= 0 ? '↑' : '↓'} {Math.abs(propertyStats.improvement)}% from last audit
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-success">
+                <Award className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Compliance Zone</p>
-                  <p className={`text-2xl font-bold capitalize ${
-                    propertyStats.complianceZone === 'green' ? 'text-green-600' :
-                    propertyStats.complianceZone === 'amber' ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {propertyStats.complianceZone}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {propertyStats.complianceZone === 'green' ? 'Excellent compliance' :
-                     propertyStats.complianceZone === 'amber' ? 'Minor issues to address' : 'Immediate action required'}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Target className="h-6 w-6 text-yellow-600" />
-                </div>
+          <div className="metric-card-warning">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Compliance Zone</p>
+                <p className={`text-3xl font-bold capitalize text-amber-900 mt-2 ${
+                  propertyStats.complianceZone === 'green' ? 'text-green-900' :
+                  propertyStats.complianceZone === 'amber' ? 'text-amber-900' : 'text-red-900'
+                }`}>
+                  {propertyStats.complianceZone}
+                </p>
+                <p className="text-xs text-amber-600 mt-1">
+                  {propertyStats.complianceZone === 'green' ? 'Excellent compliance' :
+                   propertyStats.complianceZone === 'amber' ? 'Minor issues to address' : 'Immediate action required'}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-warning">
+                <Target className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
           <Card>
             <CardContent className="p-6">

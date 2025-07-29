@@ -191,7 +191,7 @@ export default function AuditorDashboard() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen gradient-bg">
+      <div className="min-h-screen auditor-bg">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
@@ -205,7 +205,7 @@ export default function AuditorDashboard() {
 
   if (audits.length === 0) {
     return (
-      <div className="min-h-screen gradient-bg">
+      <div className="min-h-screen auditor-bg">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
@@ -225,21 +225,20 @@ export default function AuditorDashboard() {
 
   // Render audit card
   const renderAuditCard = (audit: any) => (
-    <Card key={audit.id} className="hover:shadow-lg transition-shadow">
-      <CardHeader>
+    <div key={audit.id} className="audit-card">
+      <div className="mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-2">
               <Building className="w-5 h-5 text-blue-600" />
               {getPropertyName(audit.propertyId)}
-            </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{getPropertyLocation(audit.propertyId)}</p>
+            </h3>
+            <p className="text-sm text-gray-600">{getPropertyLocation(audit.propertyId)}</p>
           </div>
           {getStatusBadge(audit.status)}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      </div>
+      <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Audit ID:</span>
             <span className="font-medium">#{audit.id}</span>
@@ -294,8 +293,7 @@ export default function AuditorDashboard() {
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 
   const handleStartAudit = (audit: any) => {
@@ -347,7 +345,7 @@ export default function AuditorDashboard() {
   // If showing checklist view
   if (showAuditChecklist && activeAudit) {
     return (
-      <div className="min-h-screen gradient-bg">
+      <div className="min-h-screen auditor-bg">
         <Navigation />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -626,7 +624,7 @@ export default function AuditorDashboard() {
 
   // Default audit list view
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen auditor-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -638,41 +636,44 @@ export default function AuditorDashboard() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="w-8 h-8 text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">Pending Audits</p>
-                  <p className="text-2xl font-bold text-blue-900">{pendingAudits.length}</p>
-                </div>
+          <div className="metric-card-primary">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Pending Audits</p>
+                <p className="text-3xl font-bold text-blue-900 mt-2">{pendingAudits.length}</p>
+                <p className="text-xs text-blue-600 mt-1">Ready to start</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-primary">
+                <Clock className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
-                <div>
-                  <p className="text-sm text-green-600 font-medium">Completed Audits</p>
-                  <p className="text-2xl font-bold text-green-900">{completedAudits.length}</p>
-                </div>
+          <div className="metric-card-success">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Completed Audits</p>
+                <p className="text-3xl font-bold text-green-900 mt-2">{completedAudits.length}</p>
+                <p className="text-xs text-green-600 mt-1">Successfully submitted</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-success">
+                <CheckCircle className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card className="bg-purple-50 border-purple-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Building className="w-8 h-8 text-purple-600 mr-3" />
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">Total Audits</p>
-                  <p className="text-2xl font-bold text-purple-900">{audits.length}</p>
-                </div>
+          <div className="metric-card-purple">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-purple-700 uppercase tracking-wide">Total Audits</p>
+                <p className="text-3xl font-bold text-purple-900 mt-2">{audits.length}</p>
+                <p className="text-xs text-purple-600 mt-1">All assignments</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-purple">
+                <Building className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Audits Tabs */}

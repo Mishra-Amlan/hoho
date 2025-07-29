@@ -134,7 +134,7 @@ export default function CorporateDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen corporate-bg">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -279,65 +279,57 @@ export default function CorporateDashboard() {
 
         {/* KPI Cards - Real-time Data */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Overall Compliance</p>
-                  <p className="text-3xl font-bold text-green-600">{kpiData.overallCompliance}%</p>
-                  <p className="text-xs text-gray-500">Live data from audits</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
+          <div className="metric-card-success">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Overall Compliance</p>
+                <p className="text-3xl font-bold text-green-900 mt-2">{kpiData.overallCompliance}%</p>
+                <p className="text-xs text-green-600 mt-1">Live data from audits</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-success">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Properties</p>
-                  <p className="text-3xl font-bold text-blue-600">{kpiData.totalProperties}</p>
-                  <p className="text-xs text-gray-500">Active properties</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Building className="h-6 w-6 text-blue-600" />
-                </div>
+          <div className="metric-card-primary">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Properties</p>
+                <p className="text-3xl font-bold text-blue-900 mt-2">{kpiData.totalProperties}</p>
+                <p className="text-xs text-blue-600 mt-1">Active properties</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-primary">
+                <Building className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Critical Issues</p>
-                  <p className="text-3xl font-bold text-red-600">{kpiData.criticalIssues}</p>
-                  <p className="text-xs text-red-600">Score below 70%</p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                </div>
+          <div className="metric-card-danger">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical Issues</p>
+                <p className="text-3xl font-bold text-red-900 mt-2">{kpiData.criticalIssues}</p>
+                <p className="text-xs text-red-600 mt-1">Score below 70%</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-danger">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Audits This Month</p>
-                  <p className="text-3xl font-bold text-amber-600">{kpiData.auditsThisMonth}</p>
-                  <p className="text-xs text-gray-500">Recent submissions</p>
-                </div>
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-amber-600" />
-                </div>
+          <div className="metric-card-warning">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Audits This Month</p>
+                <p className="text-3xl font-bold text-amber-900 mt-2">{kpiData.auditsThisMonth}</p>
+                <p className="text-xs text-amber-600 mt-1">Recent submissions</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-warning">
+                <BarChart3 className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Charts and Analytics */}
@@ -389,67 +381,66 @@ export default function CorporateDashboard() {
         </div>
 
         {/* Critical Issues Table */}
-        <Card>
-          <CardHeader>
+        <div className="modern-table">
+          <div className="p-6 border-b border-gray-100/50">
             <div className="flex items-center justify-between">
-              <CardTitle>Properties Requiring Attention</CardTitle>
-              <Button className="bg-amber-500 hover:bg-amber-600">
+              <h3 className="text-xl font-bold text-gray-900">Properties Requiring Attention</h3>
+              <Button className="btn-warning">
                 <i className="fas fa-download mr-2"></i>Export Report
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issues</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Audit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="table-header">
+                <tr>
+                  <th className="table-header-cell">Property</th>
+                  <th className="table-header-cell">Score</th>
+                  <th className="table-header-cell">Issues</th>
+                  <th className="table-header-cell">Last Audit</th>
+                  <th className="table-header-cell">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100/50">
                   {criticalProperties.map((property: any) => (
-                    <tr key={property.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr key={property.id} className="table-row">
+                      <td className="table-cell">
                         <div className="flex items-center">
                           <img 
                             src={property.image}
                             alt={property.name}
-                            className="w-10 h-10 rounded-lg object-cover mr-3"
+                            className="w-12 h-12 rounded-xl object-cover mr-4 shadow-md"
                           />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{property.name}</div>
-                            <div className="text-sm text-gray-500">{property.location}</div>
+                            <div className="text-sm font-semibold text-gray-900">{property.name}</div>
+                            <div className="text-xs text-gray-600">{property.location}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge 
-                          variant={property.score >= 75 ? "secondary" : "destructive"}
-                          className={property.score >= 75 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}
-                        >
+                      <td className="table-cell">
+                        <span className={property.score >= 75 ? "status-badge-amber" : "status-badge-red"}>
                           {property.score}%
-                        </Badge>
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {property.issues.join(', ')}
+                      <td className="table-cell">
+                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                          {property.issues.join(', ')}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {property.lastAudit}
+                      <td className="table-cell">
+                        <div className="text-sm text-gray-600">{property.lastAudit}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-amber-600 hover:text-amber-800">View Details</button>
+                      <td className="table-cell">
+                        <button className="text-amber-600 hover:text-amber-800 font-medium text-sm px-4 py-2 rounded-lg hover:bg-amber-50 transition-colors">
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
