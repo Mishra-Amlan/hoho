@@ -46,17 +46,42 @@ export default function CorporateDashboard() {
     refetchInterval: 30000
   });
 
-  // Calculate real-time KPIs from approved audits only
+  // Calculate real-time KPIs from all relevant audits
+  const completedAudits = (audits as any[]).filter((audit: any) => 
+    audit.status === 'approved' || audit.status === 'completed' || audit.status === 'reviewed'
+  );
   const approvedAudits = (audits as any[]).filter((audit: any) => audit.status === 'approved');
+  const allAuditsWithScores = (audits as any[]).filter((audit: any) => audit.overallScore > 0);
+  
   const kpiData = {
-    overallCompliance: approvedAudits.length > 0 ? Math.round(approvedAudits.reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / approvedAudits.length) : 0,
+    // Use approved audits for compliance calculation, fallback to all scored audits if no approved ones
+    overallCompliance: approvedAudits.length > 0 
+      ? Math.round(approvedAudits.reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / approvedAudits.length)
+      : allAuditsWithScores.length > 0 
+        ? Math.round(allAuditsWithScores.reduce((sum: number, audit: any) => sum + audit.overallScore, 0) / allAuditsWithScores.length)
+        : 0,
+    
+    // Total properties count
     totalProperties: (properties as any[]).length,
-    criticalIssues: approvedAudits.filter((audit: any) => audit.overallScore && audit.overallScore < 70).length,
-    auditsThisMonth: approvedAudits.filter((audit: any) => {
-      const auditDate = new Date(audit.submittedAt || audit.createdAt);
+    
+    // Critical issues - properties with scores below 70
+    criticalIssues: allAuditsWithScores.filter((audit: any) => audit.overallScore < 70).length,
+    
+    // Audits this month - include all audits with activity this month
+    auditsThisMonth: (audits as any[]).filter((audit: any) => {
+      const auditDate = new Date(audit.submittedAt || audit.reviewedAt || audit.createdAt);
       const now = new Date();
       return auditDate.getMonth() === now.getMonth() && auditDate.getFullYear() === now.getFullYear();
-    }).length
+    }).length,
+    
+    // Additional metrics for enhanced real-time data
+    totalAudits: (audits as any[]).length,
+    pendingAudits: (audits as any[]).filter((audit: any) => 
+      audit.status === 'scheduled' || audit.status === 'in_progress'
+    ).length,
+    excellentProperties: allAuditsWithScores.filter((audit: any) => audit.overallScore >= 90).length,
+    goodProperties: allAuditsWithScores.filter((audit: any) => audit.overallScore >= 80 && audit.overallScore < 90).length,
+    amberProperties: allAuditsWithScores.filter((audit: any) => audit.overallScore >= 70 && audit.overallScore < 80).length
   };
 
   // Debug logging
@@ -523,7 +548,14 @@ export default function CorporateDashboard() {
               <div>
                 <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Overall Compliance</p>
                 <p className="text-3xl font-bold text-green-900 mt-2">{kpiData.overallCompliance}%</p>
-                <p className="text-xs text-green-600 mt-1">Live data from audits</p>
+                <p className="text-xs text-green-600 mt-1">
+                  {approvedAudits.length > 0 
+                    ? `From ${approvedAudits.length} approved audit${approvedAudits.length !== 1 ? 's' : ''}`
+                    : allAuditsWithScores.length > 0 
+                      ? `From ${allAuditsWithScores.length} scored audit${allAuditsWithScores.length !== 1 ? 's' : ''}`
+                      : 'No audit data available'
+                  }
+                </p>
               </div>
               <div className="icon-container-success">
                 <TrendingUp className="h-6 w-6" />
@@ -536,7 +568,9 @@ export default function CorporateDashboard() {
               <div>
                 <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Properties</p>
                 <p className="text-3xl font-bold text-blue-900 mt-2">{kpiData.totalProperties}</p>
-                <p className="text-xs text-blue-600 mt-1">Active properties</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {allAuditsWithScores.length} with completed audits
+                </p>
               </div>
               <div className="icon-container-primary">
                 <Building className="h-6 w-6" />
@@ -549,7 +583,12 @@ export default function CorporateDashboard() {
               <div>
                 <p className="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical Issues</p>
                 <p className="text-3xl font-bold text-red-900 mt-2">{kpiData.criticalIssues}</p>
-                <p className="text-xs text-red-600 mt-1">Score below 70%</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {kpiData.criticalIssues === 0 
+                    ? 'No critical issues found' 
+                    : `Properties scoring below 70%`
+                  }
+                </p>
               </div>
               <div className="icon-container-danger">
                 <AlertCircle className="h-6 w-6" />
@@ -562,13 +601,77 @@ export default function CorporateDashboard() {
               <div>
                 <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Audits This Month</p>
                 <p className="text-3xl font-bold text-amber-900 mt-2">{kpiData.auditsThisMonth}</p>
-                <p className="text-xs text-amber-600 mt-1">Recent submissions</p>
+                <p className="text-xs text-amber-600 mt-1">
+                  {kpiData.pendingAudits > 0 
+                    ? `${kpiData.pendingAudits} pending completion`
+                    : 'All scheduled audits completed'
+                  }
+                </p>
               </div>
               <div className="icon-container-warning">
                 <BarChart3 className="h-6 w-6" />
               </div>
             </div>
           </div>
+          </div>
+        </div>
+
+        {/* Additional Real-time Performance Metrics */}
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 dashboard-grid">
+            <div className="metric-card-success">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Excellent Properties</p>
+                  <p className="text-3xl font-bold text-green-900 mt-2">{kpiData.excellentProperties}</p>
+                  <p className="text-xs text-green-600 mt-1">Scoring 90% and above</p>
+                </div>
+                <div className="icon-container-success">
+                  <CheckCircle className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card-primary">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Good Performance</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">{kpiData.goodProperties}</p>
+                  <p className="text-xs text-blue-600 mt-1">Scoring 80-89%</p>
+                </div>
+                <div className="icon-container-primary">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card-warning">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-amber-700 uppercase tracking-wide">Needs Attention</p>
+                  <p className="text-3xl font-bold text-amber-900 mt-2">{kpiData.amberProperties}</p>
+                  <p className="text-xs text-amber-600 mt-1">Scoring 70-79%</p>
+                </div>
+                <div className="icon-container-warning">
+                  <Clock className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card-primary">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Audits</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">{kpiData.totalAudits}</p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {completedAudits.length} completed, {kpiData.pendingAudits} pending
+                  </p>
+                </div>
+                <div className="icon-container-primary">
+                  <FileText className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

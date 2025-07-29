@@ -6,6 +6,14 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 
 ## Recent Changes (January 29, 2025)
 
+✓ **MAJOR: Enhanced Corporate Dashboard with Real-Time KPI Analytics**
+✓ Fixed Corporate dashboard individual tiles to show actual real-time values instead of dummy data
+✓ Added comprehensive KPI calculations from audit data with intelligent fallbacks
+✓ Enhanced KPI tiles with detailed real-time context descriptions  
+✓ Added second row of performance metrics showing excellence distribution
+✓ Implemented dynamic text updates based on actual audit completion status
+✓ Real-time metrics now include: compliance rates, critical issues, pending audits, performance categories
+
 ✓ **MAJOR: Created 5 Comprehensive Survey Results with Varied Performance Levels**
 ✓ Added 5 new hotel properties across different regions and hotel groups
 ✓ Survey 1: Marriott Executive Apartments, Bangalore - Excellent Performance (92%)
