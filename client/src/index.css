@@ -272,40 +272,47 @@
     @apply bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border border-red-200 rounded-full px-3 py-1 text-xs font-semibold shadow-sm;
   }
   
-  /* Enhanced metric cards */
+  /* Enhanced metric cards with improved padding */
   .metric-card {
-    @apply bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-105;
+    @apply bg-white/95 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-105;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+    margin: 8px;
   }
   
   .metric-card-primary {
-    @apply bg-gradient-to-br from-blue-50/90 to-blue-100/90 border-blue-200/50 text-blue-900;
+    @apply bg-gradient-to-br from-blue-50/90 to-blue-100/90 border-blue-200/50 text-blue-900 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
     backdrop-filter: blur(10px);
+    margin: 8px;
   }
   
   .metric-card-success {
-    @apply bg-gradient-to-br from-green-50/90 to-green-100/90 border-green-200/50 text-green-900;
+    @apply bg-gradient-to-br from-green-50/90 to-green-100/90 border-green-200/50 text-green-900 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
     backdrop-filter: blur(10px);
+    margin: 8px;
   }
   
   .metric-card-warning {
-    @apply bg-gradient-to-br from-amber-50/90 to-amber-100/90 border-amber-200/50 text-amber-900;
+    @apply bg-gradient-to-br from-amber-50/90 to-amber-100/90 border-amber-200/50 text-amber-900 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
     backdrop-filter: blur(10px);
+    margin: 8px;
   }
   
   .metric-card-danger {
-    @apply bg-gradient-to-br from-red-50/90 to-red-100/90 border-red-200/50 text-red-900;
+    @apply bg-gradient-to-br from-red-50/90 to-red-100/90 border-red-200/50 text-red-900 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
     backdrop-filter: blur(10px);
+    margin: 8px;
   }
   
   .metric-card-purple {
-    @apply bg-gradient-to-br from-purple-50/90 to-purple-100/90 border-purple-200/50 text-purple-900;
+    @apply bg-gradient-to-br from-purple-50/90 to-purple-100/90 border-purple-200/50 text-purple-900 p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105;
     backdrop-filter: blur(10px);
+    margin: 8px;
   }
 
-  /* Enhanced table styling */
+  /* Enhanced table styling with improved padding */
   .modern-table {
     @apply bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/30 overflow-hidden;
+    margin: 16px 8px;
   }
   
   .table-header {
@@ -317,25 +324,50 @@
   }
   
   .table-cell {
-    @apply px-6 py-4 text-sm;
+    @apply px-8 py-6 text-sm;
   }
   
   .table-header-cell {
-    @apply px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider;
+    @apply px-8 py-6 text-xs font-semibold text-gray-600 uppercase tracking-wider;
   }
 
-  /* Enhanced card styling */
+  /* Enhanced card styling with improved padding */
   .dashboard-card {
     @apply bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02];
+    padding: 32px;
+    margin: 16px 8px;
   }
   
   .audit-card {
-    @apply bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:bg-white/95;
+    @apply bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:bg-white/95;
+    padding: 32px;
+    margin: 16px 8px;
   }
   
-  /* Interactive elements */
+  /* Interactive elements with improved spacing */
   .interactive-hover {
     @apply transition-all duration-300 hover:bg-gray-50/80 hover:shadow-lg cursor-pointer rounded-xl backdrop-blur-sm;
+    padding: 16px;
+    margin: 8px;
+  }
+
+  /* Dashboard section spacing */
+  .dashboard-section {
+    @apply mb-12;
+  }
+
+  .dashboard-grid {
+    @apply gap-8 mb-12;
+  }
+
+  /* Card content padding improvements */
+  .card-content-enhanced {
+    @apply p-8;
+  }
+
+  /* Header spacing improvements */
+  .dashboard-header {
+    @apply mb-12 px-2;
   }
 
   /* Status badges with enhanced styling */
@@ -359,29 +391,30 @@
     @apply bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200/50 rounded-full px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur-sm;
   }
 
-  /* Icon containers */
+  /* Enhanced icon containers with better spacing */
   .icon-container {
-    @apply w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
+    @apply w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
+    margin: 8px;
   }
   
   .icon-container-primary {
-    @apply bg-gradient-to-br from-blue-500 to-blue-600 text-white;
+    @apply bg-gradient-to-br from-blue-500 to-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
   }
   
   .icon-container-success {
-    @apply bg-gradient-to-br from-green-500 to-green-600 text-white;
+    @apply bg-gradient-to-br from-green-500 to-green-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
   }
   
   .icon-container-warning {
-    @apply bg-gradient-to-br from-amber-500 to-amber-600 text-white;
+    @apply bg-gradient-to-br from-amber-500 to-amber-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
   }
   
   .icon-container-danger {
-    @apply bg-gradient-to-br from-red-500 to-red-600 text-white;
+    @apply bg-gradient-to-br from-red-500 to-red-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
   }
   
   .icon-container-purple {
-    @apply bg-gradient-to-br from-purple-500 to-purple-600 text-white;
+    @apply bg-gradient-to-br from-purple-500 to-purple-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300;
   }
 }
 

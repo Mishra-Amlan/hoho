@@ -324,13 +324,14 @@ export default function ReviewerDashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="dashboard-header">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">Review Queue</h1>
           <p className="text-gray-700 text-lg">Validate audit reports and AI-generated scores</p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-4 dashboard-grid">
           <div className="metric-card-warning">
             <div className="flex items-center justify-between">
               <div>
@@ -382,9 +383,10 @@ export default function ReviewerDashboard() {
               </div>
             </div>
           </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 dashboard-grid">
           {/* Review Queue */}
           <div className="lg:col-span-1">
             <Card>

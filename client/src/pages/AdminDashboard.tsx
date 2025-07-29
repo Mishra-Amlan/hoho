@@ -514,7 +514,7 @@ export default function AdminDashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="dashboard-header">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">Admin Dashboard</h1>
@@ -793,7 +793,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 dashboard-grid">
           <div 
             className="metric-card-primary cursor-pointer"
             onClick={() => setActiveTab('properties')}
@@ -859,6 +860,7 @@ export default function AdminDashboard() {
           </div>
 
 
+          </div>
         </div>
 
         {/* Main Content Tabs */}

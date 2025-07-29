@@ -139,7 +139,7 @@ export default function CorporateDashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="dashboard-header">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Corporate Analytics Dashboard</h1>
           <p className="text-gray-600">Monitor brand compliance and performance across all properties</p>
         </div>
@@ -278,7 +278,8 @@ export default function CorporateDashboard() {
         </div>
 
         {/* KPI Cards - Real-time Data */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 dashboard-grid">
           <div className="metric-card-success">
             <div className="flex items-center justify-between">
               <div>
@@ -329,6 +330,7 @@ export default function CorporateDashboard() {
                 <BarChart3 className="h-6 w-6" />
               </div>
             </div>
+          </div>
           </div>
         </div>
 

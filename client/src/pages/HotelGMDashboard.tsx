@@ -149,7 +149,7 @@ export default function HotelGMDashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="dashboard-header">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{property?.name || 'Property Dashboard'}</h1>
@@ -217,7 +217,8 @@ export default function HotelGMDashboard() {
         </div>
 
         {/* Property Status Cards - Real-time Data */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-4 dashboard-grid">
           <div className="metric-card-success">
             <div className="flex items-center justify-between">
               <div>
@@ -256,35 +257,32 @@ export default function HotelGMDashboard() {
             </div>
           </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Next Audit</p>
-                  <p className="text-2xl font-bold text-blue-600">{propertyStats.nextAuditDays} Days</p>
-                  <p className="text-xs text-blue-600">Quarterly schedule</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                </div>
+          <div className="metric-card-primary">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Next Audit</p>
+                <p className="text-3xl font-bold text-blue-900 mt-2">{propertyStats.nextAuditDays} Days</p>
+                <p className="text-xs text-blue-600 mt-1">Quarterly schedule</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-primary">
+                <Calendar className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Audits</p>
-                  <p className="text-2xl font-bold text-purple-600">{propertyAudits.length}</p>
-                  <p className="text-xs text-gray-500">Historical data</p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-purple-600" />
-                </div>
+          <div className="metric-card-purple">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-purple-700 uppercase tracking-wide">Total Audits</p>
+                <p className="text-3xl font-bold text-purple-900 mt-2">{propertyAudits.length}</p>
+                <p className="text-xs text-purple-600 mt-1">Historical data</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="icon-container-purple">
+                <BarChart3 className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
+          </div>
         </div>
 
         {/* Latest Audit Report */}

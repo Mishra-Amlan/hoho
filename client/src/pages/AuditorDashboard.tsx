@@ -629,13 +629,14 @@ export default function AuditorDashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="dashboard-header">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">My Assigned Audits</h1>
           <p className="text-gray-700 text-lg">Conduct audits, record observations, and upload evidence</p>
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 md:grid-cols-3 dashboard-grid">
           <div className="metric-card-primary">
             <div className="flex items-center justify-between">
               <div>
@@ -673,6 +674,7 @@ export default function AuditorDashboard() {
                 <Building className="h-6 w-6" />
               </div>
             </div>
+          </div>
           </div>
         </div>
 
