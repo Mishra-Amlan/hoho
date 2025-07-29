@@ -64,13 +64,17 @@ export default function HotelGMDashboard() {
       (propertyAudits[0]?.overallScore || 0) - (propertyAudits[1]?.overallScore || 0) : 0
   };
 
-  // Calculate audit results from real data
+  // Calculate audit results from real data - always use actual values when available
   const auditResults = {
     overall: latestAudit?.overallScore || 0,
     cleanliness: latestAudit?.cleanlinessScore || 0,
     branding: latestAudit?.brandingScore || 0,
     operational: latestAudit?.operationalScore || 0
   };
+
+  // Debug log to verify real-time data
+  console.log('Real-time audit results:', auditResults);
+  console.log('Latest audit data:', latestAudit);
 
   // Generate findings from real audit data
   const findings = [
