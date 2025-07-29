@@ -95,6 +95,8 @@ export default function AuditorDashboard() {
   const handleSubmitForReview = async () => {
     if (!activeAudit) return;
     
+    console.log('Starting audit submission with itemData:', itemData);
+    
     // Save current audit data to audit items before submitting
     const auditItemPromises = Object.entries(itemData).map(async ([itemId, data]) => {
       const checklistItem = HOTEL_AUDIT_CHECKLIST
@@ -102,8 +104,14 @@ export default function AuditorDashboard() {
         .find(item => item.id === itemId);
       
       if (checklistItem && (data.comments.trim() !== '' || data.media.length > 0)) {
+        console.log(`Saving audit item ${itemId}:`, {
+          comments: data.comments.substring(0, 50) + '...',
+          mediaCount: data.media.length,
+          mediaTypes: data.media.map(m => m.type)
+        });
+        
         // Create or update audit item
-        return fetch(`/api/audits/${activeAudit.id}/items`, {
+        const response = await fetch(`/api/audits/${activeAudit.id}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -116,12 +124,23 @@ export default function AuditorDashboard() {
             maxScore: checklistItem.maxScore
           })
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to save audit item ${itemId}:`, errorText);
+          throw new Error(`Failed to save audit item: ${errorText}`);
+        }
+        
+        const savedItem = await response.json();
+        console.log(`Successfully saved audit item ${itemId}:`, savedItem.id);
+        return response;
       }
     });
     
     try {
       // Wait for all audit items to be saved
-      await Promise.all(auditItemPromises.filter(Boolean));
+      const results = await Promise.all(auditItemPromises.filter(Boolean));
+      console.log(`Successfully saved ${results.length} audit items`);
       
       // Then submit the audit for review
       await updateAudit.mutateAsync({
@@ -129,6 +148,8 @@ export default function AuditorDashboard() {
         status: 'submitted',
         submittedAt: new Date().toISOString()
       });
+      
+      console.log('Audit submitted successfully');
       
       toast({
         title: "Submitted for Review",
@@ -143,7 +164,7 @@ export default function AuditorDashboard() {
       console.error('Submission error:', error);
       toast({
         title: "Submission Failed",
-        description: "Unable to submit audit. Please try again.",
+        description: `Unable to submit audit: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -169,7 +190,7 @@ export default function AuditorDashboard() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
   };
 

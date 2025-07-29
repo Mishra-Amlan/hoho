@@ -278,10 +278,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const auditId = parseInt(req.params.auditId);
       const { mediaAttachments, ...restData } = req.body;
       
+      console.log('Creating audit item with data:', JSON.stringify({ auditId, mediaAttachments: mediaAttachments?.length || 0, ...restData }, null, 2));
+      
       // Convert mediaAttachments to photos field (JSON string)
       const photos = mediaAttachments && mediaAttachments.length > 0 
         ? JSON.stringify(mediaAttachments) 
-        : null;
+        : '[]';
       
       const itemData = { 
         ...restData, 
@@ -291,25 +293,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const item = await storage.createAuditItem(itemData);
+      console.log('Created audit item:', item);
       res.json(item);
     } catch (error) {
       console.error('Failed to create audit item:', error);
-      res.status(500).json({ message: "Failed to create audit item" });
+      res.status(500).json({ message: "Failed to create audit item", error: (error as Error).message });
     }
   });
 
   app.patch("/api/audit-items/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updateData = req.body;
+      const { mediaAttachments, ...restData } = req.body;
+      
+      console.log('Updating audit item:', id, 'with data:', JSON.stringify({ mediaAttachments: mediaAttachments?.length || 0, ...restData }, null, 2));
+      
+      // Convert mediaAttachments to photos field if provided
+      const updateData = { ...restData };
+      if (mediaAttachments !== undefined) {
+        updateData.photos = mediaAttachments && mediaAttachments.length > 0 
+          ? JSON.stringify(mediaAttachments) 
+          : '[]';
+      }
+      
       const item = await storage.updateAuditItem(id, updateData);
       
       if (!item) {
         return res.status(404).json({ message: "Audit item not found" });
       }
       
+      console.log('Updated audit item:', item);
       res.json(item);
     } catch (error) {
+      console.error('Failed to update audit item:', error);
       res.status(500).json({ message: "Failed to update audit item", error: (error as Error).message });
     }
   });

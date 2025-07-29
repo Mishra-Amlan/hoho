@@ -140,7 +140,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAuditItem(item: InsertAuditItem): Promise<AuditItem> {
+    console.log('DatabaseStorage creating audit item:', {
+      auditId: item.auditId,
+      category: item.category,
+      item: item.item?.substring(0, 50),
+      comments: item.comments?.substring(0, 50),
+      photosLength: item.photos?.length || 0,
+      hasPhotos: !!item.photos
+    });
+    
     const result = await db.insert(auditItems).values(item).returning();
+    
+    console.log('DatabaseStorage created audit item:', result[0]);
     return result[0];
   }
 
