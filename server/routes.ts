@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Analysis endpoint for entire audit
+  // AI Analysis endpoint for entire audit - now calculates from individual scores
   app.post("/api/audits/:id/analyze", async (req, res) => {
     try {
       const auditId = parseInt(req.params.id);
@@ -358,25 +358,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Audit not found" });
       }
 
-      // Generate AI analysis and scores
-      const { analyzeAuditData } = await import("./geminiScoring");
-      const analysis = await analyzeAuditData(audit, auditItems);
+      // Calculate scores from individual item scores (real-time calculation)
+      const updatedAudit = await recalculateAuditScores(auditId);
       
-      // Update audit with AI-generated scores
-      const updatedAudit = await storage.updateAudit(auditId, {
-        overallScore: analysis.overallScore,
-        cleanlinessScore: analysis.cleanlinessScore,
-        brandingScore: analysis.brandingScore,
-        operationalScore: analysis.operationalScore,
-        complianceZone: analysis.complianceZone,
-        findings: analysis.findings,
-        actionPlan: analysis.actionPlan
-      });
-
-      res.json({ 
-        audit: updatedAudit, 
-        analysis: analysis 
-      });
+      // Also generate AI insights for findings and action plans if API is available
+      try {
+        const { generateAuditInsights } = await import("./geminiScoring");
+        const insights = await generateAuditInsights(audit, auditItems);
+        
+        // Update with AI insights while keeping calculated scores
+        const finalAudit = await storage.updateAudit(auditId, {
+          findings: insights.findings,
+          actionPlan: insights.actionPlan
+        });
+        
+        res.json({ 
+          audit: { ...updatedAudit, ...finalAudit }, 
+          calculatedFromItems: true,
+          aiInsights: insights
+        });
+      } catch (aiError) {
+        console.log('AI insights unavailable, using calculated scores only');
+        res.json({ 
+          audit: updatedAudit, 
+          calculatedFromItems: true,
+          aiInsightsError: (aiError as Error).message
+        });
+      }
     } catch (error) {
       console.error('AI Analysis error:', error);
       res.status(500).json({ message: "Failed to analyze audit", error: (error as Error).message });
@@ -412,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/audit-items/:itemId", async (req, res) => {
     try {
       const itemId = parseInt(req.params.itemId);
-      const { score, comments, reviewerNotes, aiAnalysis } = req.body;
+      const { score, comments, reviewerNotes, aiAnalysis, auditId } = req.body;
       
       const updatedItem = await storage.updateAuditItem(itemId, {
         score,
@@ -420,7 +428,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiAnalysis: aiAnalysis || undefined,
       });
       
-      res.json(updatedItem);
+      // Recalculate overall audit scores based on individual item scores
+      if (auditId) {
+        const updatedAudit = await recalculateAuditScores(auditId);
+        res.json({ updatedItem, updatedAudit });
+      } else {
+        res.json(updatedItem);
+      }
     } catch (error) {
       console.error('Update audit item error:', error);
       res.status(500).json({ message: "Failed to update audit item", error: (error as Error).message });
@@ -487,6 +501,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
   });
+
+  // Helper function to recalculate audit scores from individual item scores
+  async function recalculateAuditScores(auditId: number) {
+    const auditItems = await storage.getAuditItems(auditId);
+    const itemsWithScores = auditItems.filter(item => item.score !== null && item.score !== undefined);
+    
+    if (itemsWithScores.length === 0) {
+      return null;
+    }
+    
+    // Calculate average scores by category
+    const categoryScores = {
+      cleanliness: [] as number[],
+      branding: [] as number[], 
+      operational: [] as number[]
+    };
+    
+    itemsWithScores.forEach(item => {
+      const score = item.score!;
+      const category = item.category.toLowerCase();
+      
+      if (category.includes('clean') || category.includes('maintenance') || category.includes('hygiene')) {
+        categoryScores.cleanliness.push(score);
+      } else if (category.includes('brand') || category.includes('signage') || category.includes('logo') || category.includes('uniform')) {
+        categoryScores.branding.push(score);
+      } else {
+        categoryScores.operational.push(score);
+      }
+    });
+    
+    // Calculate category averages (convert 0-5 scale to 0-100)
+    const cleanlinessScore = categoryScores.cleanliness.length > 0 
+      ? Math.round((categoryScores.cleanliness.reduce((a, b) => a + b, 0) / categoryScores.cleanliness.length) * 20)
+      : 0;
+      
+    const brandingScore = categoryScores.branding.length > 0
+      ? Math.round((categoryScores.branding.reduce((a, b) => a + b, 0) / categoryScores.branding.length) * 20)
+      : 0;
+      
+    const operationalScore = categoryScores.operational.length > 0
+      ? Math.round((categoryScores.operational.reduce((a, b) => a + b, 0) / categoryScores.operational.length) * 20)
+      : 0;
+    
+    // Calculate overall score as weighted average
+    const overallScore = Math.round((cleanlinessScore * 0.4 + brandingScore * 0.3 + operationalScore * 0.3));
+    
+    // Determine compliance zone
+    let complianceZone: 'green' | 'amber' | 'red' = 'red';
+    if (overallScore >= 85) complianceZone = 'green';
+    else if (overallScore >= 70) complianceZone = 'amber';
+    
+    console.log('Recalculated scores:', { overallScore, cleanlinessScore, brandingScore, operationalScore, complianceZone });
+    
+    // Update the audit with calculated scores
+    return await storage.updateAudit(auditId, {
+      overallScore,
+      cleanlinessScore,
+      brandingScore,
+      operationalScore,
+      complianceZone
+    });
+  }
 
   const httpServer = createServer(app);
   return httpServer;

@@ -171,6 +171,43 @@ async function rateLimitedApiCall<T>(apiCall: () => Promise<T>): Promise<T> {
 }
 
 // Individual audit item analysis with media support
+export async function generateAuditInsights(audit: Audit, auditItems: AuditItem[]): Promise<{ findings: string; actionPlan: string }> {
+  try {
+    const systemPrompt = "You are an expert hotel audit analyst. Generate comprehensive findings and action plans based on audit data.";
+    const prompt = `Generate findings and action plan for audit of property ${audit.propertyId} with ${auditItems.length} audit items. Focus on key issues and improvement recommendations.`;
+    
+    const response = await rateLimitedApiCall(async () => {
+      return await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              findings: { type: "string" },
+              actionPlan: { type: "string" }
+            }
+          }
+        },
+        contents: prompt
+      });
+    });
+    
+    const result = JSON.parse(response.text || '{}');
+    return {
+      findings: result.findings || "Analysis completed based on individual item scores.",
+      actionPlan: result.actionPlan || "Continue monitoring and maintain current standards."
+    };
+  } catch (error) {
+    console.log('AI insights unavailable:', error);
+    return {
+      findings: "Analysis completed based on individual item scores. AI insights temporarily unavailable.",
+      actionPlan: "Review individual item scores and address low-scoring areas. Consider re-running analysis when AI service is available."
+    };
+  }
+}
+
 export async function analyzeIndividualItem(auditItem: AuditItem, checklistDetails?: any): Promise<{ score: number; aiAnalysis: string }> {
   try {
     const systemPrompt = `You are an expert hotel brand audit analyst. Analyze this specific audit checklist item and provide a score (0-5) and detailed analysis.
