@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap } from 'lucide-react';
+import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap, Download, Eye, FileText, Filter } from 'lucide-react';
 
 export default function CorporateDashboard() {
   const { toast } = useToast();
@@ -29,6 +31,9 @@ export default function CorporateDashboard() {
     priority: 'medium',
     targetProperties: 'all'
   });
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [reportDetailsOpen, setReportDetailsOpen] = useState(false);
 
   // Fetch real-time data
   const { data: audits = [], isLoading: auditsLoading } = useQuery({
@@ -58,20 +63,63 @@ export default function CorporateDashboard() {
   console.log('Corporate - Properties data:', properties);
   console.log('Corporate - KPI data:', kpiData);
 
-  // Calculate regional data from real audits
-  const regionalData = (properties as any[]).map((property: any) => {
-    const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id);
-    const avgScore = propertyAudits.length > 0 
-      ? Math.round(propertyAudits.reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / propertyAudits.length)
-      : 0;
+  // Calculate comprehensive regional performance data
+  const regionalPerformanceData = () => {
+    const regions = [...new Set((properties as any[]).map((p: any) => p.region))];
     
-    return {
-      region: property.region || property.location,
-      score: avgScore,
-      color: avgScore >= 85 ? 'bg-green-500' : avgScore >= 70 ? 'bg-yellow-500' : 'bg-red-500',
-      propertyName: property.name
-    };
-  });
+    return regions.map(region => {
+      const regionProperties = (properties as any[]).filter((p: any) => p.region === region);
+      const regionAudits = (audits as any[]).filter((audit: any) => 
+        regionProperties.some((p: any) => p.id === audit.propertyId) && audit.status === 'approved'
+      );
+      
+      const scores = regionAudits.map((a: any) => a.overallScore).filter((s: any) => s);
+      const avgScore = scores.length > 0 ? Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length) : 0;
+      const excellentCount = scores.filter((s: number) => s >= 85).length;
+      const goodCount = scores.filter((s: number) => s >= 70 && s < 85).length;
+      const poorCount = scores.filter((s: number) => s < 70).length;
+      
+      return {
+        region,
+        properties: regionProperties.length,
+        audits: regionAudits.length,
+        avgScore,
+        excellentCount,
+        goodCount,
+        poorCount,
+        complianceRate: regionAudits.length > 0 ? Math.round((excellentCount + goodCount) / regionAudits.length * 100) : 0,
+        trend: avgScore >= 85 ? 'excellent' : avgScore >= 70 ? 'good' : 'poor',
+        lastAudit: regionAudits.length > 0 ? 
+          new Date(Math.max(...regionAudits.map((a: any) => new Date(a.submittedAt || a.createdAt).getTime()))).toLocaleDateString() : 
+          'No audits'
+      };
+    });
+  };
+
+  const regionalData = regionalPerformanceData();
+
+  // Get detailed property data for export and details view
+  const getDetailedPropertyData = () => {
+    return (properties as any[]).map((property: any) => {
+      const propertyAudits = (audits as any[]).filter((audit: any) => audit.propertyId === property.id && audit.status === 'approved');
+      const latestAudit = propertyAudits.sort((a: any, b: any) => 
+        new Date(b.submittedAt || b.createdAt).getTime() - new Date(a.submittedAt || a.createdAt).getTime()
+      )[0];
+      
+      return {
+        ...property,
+        totalAudits: propertyAudits.length,
+        latestScore: latestAudit?.overallScore || 0,
+        latestCleanliness: latestAudit?.cleanlinessScore || 0,
+        latestBranding: latestAudit?.brandingScore || 0,
+        latestOperational: latestAudit?.operationalScore || 0,
+        complianceZone: latestAudit?.complianceZone || 'unknown',
+        lastAuditDate: latestAudit ? new Date(latestAudit.submittedAt || latestAudit.createdAt).toLocaleDateString() : 'No audits',
+        findings: latestAudit?.findings || 'No findings available',
+        actionPlan: latestAudit?.actionPlan || 'No action plan available'
+      };
+    });
+  };
 
   // Get critical properties from real data
   const criticalProperties = (properties as any[])
@@ -132,6 +180,48 @@ export default function CorporateDashboard() {
       setRecommendationData({ title: '', description: '', priority: 'medium', targetProperties: 'all' });
     }
   });
+
+  // Export functionality
+  const exportReportData = () => {
+    const detailedData = getDetailedPropertyData();
+    const filteredData = selectedRegion === 'all' ? detailedData : detailedData.filter(p => p.region === selectedRegion);
+    
+    const csvContent = [
+      ['Property Name', 'Location', 'Region', 'Latest Score', 'Cleanliness', 'Branding', 'Operational', 'Compliance Zone', 'Last Audit Date', 'Total Audits'].join(','),
+      ...filteredData.map(property => [
+        `"${property.name}"`,
+        `"${property.location}"`,
+        `"${property.region}"`,
+        property.latestScore,
+        property.latestCleanliness,
+        property.latestBranding,
+        property.latestOperational,
+        `"${property.complianceZone}"`,
+        `"${property.lastAuditDate}"`,
+        property.totalAudits
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `hotel-audit-report-${selectedRegion}-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    toast({
+      title: "Report Exported",
+      description: `Regional performance report exported successfully for ${selectedRegion === 'all' ? 'all regions' : selectedRegion}`,
+    });
+  };
+
+  const viewPropertyDetails = (property: any) => {
+    setSelectedProperty(property);
+    setReportDetailsOpen(true);
+  };
 
   return (
     <div className="min-h-screen corporate-bg">
@@ -277,6 +367,150 @@ export default function CorporateDashboard() {
           </Dialog>
         </div>
 
+        {/* Property Details Modal */}
+        <Dialog open={reportDetailsOpen} onOpenChange={setReportDetailsOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-3">
+                <img 
+                  src={selectedProperty?.image}
+                  alt={selectedProperty?.name}
+                  className="w-12 h-12 rounded object-cover"
+                />
+                <div>
+                  <div className="text-lg font-bold">{selectedProperty?.name}</div>
+                  <div className="text-sm text-gray-600">{selectedProperty?.location}, {selectedProperty?.region}</div>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedProperty && (
+              <div className="space-y-6">
+                {/* Score Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-2xl font-bold text-blue-600">{selectedProperty.latestScore}%</div>
+                      <div className="text-sm text-gray-600">Overall Score</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-2xl font-bold text-green-600">{selectedProperty.latestCleanliness}%</div>
+                      <div className="text-sm text-gray-600">Cleanliness</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-2xl font-bold text-purple-600">{selectedProperty.latestBranding}%</div>
+                      <div className="text-sm text-gray-600">Branding</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-2xl font-bold text-orange-600">{selectedProperty.latestOperational}%</div>
+                      <div className="text-sm text-gray-600">Operations</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Audit Information */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Audit Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Audits:</span>
+                          <span className="font-medium">{selectedProperty.totalAudits}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Last Audit:</span>
+                          <span className="font-medium">{selectedProperty.lastAuditDate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Compliance Zone:</span>
+                          <Badge className={
+                            selectedProperty.complianceZone === 'green' ? 'bg-green-100 text-green-800' :
+                            selectedProperty.complianceZone === 'amber' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }>
+                            {selectedProperty.complianceZone}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Performance Trends</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-gray-600">Cleanliness</span>
+                            <span className="text-sm font-medium">{selectedProperty.latestCleanliness}%</span>
+                          </div>
+                          <Progress value={selectedProperty.latestCleanliness} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-gray-600">Branding</span>
+                            <span className="text-sm font-medium">{selectedProperty.latestBranding}%</span>
+                          </div>
+                          <Progress value={selectedProperty.latestBranding} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-gray-600">Operations</span>
+                            <span className="text-sm font-medium">{selectedProperty.latestOperational}%</span>
+                          </div>
+                          <Progress value={selectedProperty.latestOperational} className="h-2" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Findings and Action Plan */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <FileText className="h-5 w-5 mr-2" />
+                        Key Findings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-line">
+                        {selectedProperty.findings}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <Zap className="h-5 w-5 mr-2" />
+                        Action Plan
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-line">
+                        {selectedProperty.actionPlan}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* KPI Cards - Real-time Data */}
         <div className="dashboard-section">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 dashboard-grid">
@@ -382,66 +616,131 @@ export default function CorporateDashboard() {
           </Card>
         </div>
 
-        {/* Critical Issues Table */}
-        <div className="modern-table">
-          <div className="p-6 border-b border-gray-100/50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Properties Requiring Attention</h3>
-              <Button className="btn-warning">
-                <i className="fas fa-download mr-2"></i>Export Report
+        {/* Enhanced Regional Performance Table */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Regional Performance Analysis</h3>
+            <div className="flex items-center space-x-4">
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {[...new Set((properties as any[]).map((p: any) => p.region))].map(region => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={exportReportData} className="bg-green-600 hover:bg-green-700">
+                <Download className="h-4 w-4 mr-2" />
+                Export Report
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="table-header">
-                <tr>
-                  <th className="table-header-cell">Property</th>
-                  <th className="table-header-cell">Score</th>
-                  <th className="table-header-cell">Issues</th>
-                  <th className="table-header-cell">Last Audit</th>
-                  <th className="table-header-cell">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100/50">
-                  {criticalProperties.map((property: any) => (
-                    <tr key={property.id} className="table-row">
-                      <td className="table-cell">
-                        <div className="flex items-center">
+          
+          {/* Regional Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {regionalData.map((region: any, index: number) => (
+              <Card key={index} className="card-modern">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-gray-900">{region.region}</h4>
+                    <Badge className={region.trend === 'excellent' ? 'bg-green-500' : region.trend === 'good' ? 'bg-yellow-500' : 'bg-red-500'}>
+                      {region.trend}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-2xl font-bold text-gray-900">{region.avgScore}%</div>
+                    <div className="text-sm text-gray-600">{region.properties} Properties • {region.audits} Audits</div>
+                    <Progress value={region.avgScore} className="h-2 bg-gray-100" />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Compliance: {region.complianceRate}%</span>
+                      <span>{region.lastAudit}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Detailed Properties Table */}
+          <Card className="card-modern">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Property Performance Details</span>
+                <Badge variant="outline">{getDetailedPropertyData().filter(p => selectedRegion === 'all' || p.region === selectedRegion).length} Properties</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Property</TableHead>
+                    <TableHead>Region</TableHead>
+                    <TableHead>Overall Score</TableHead>
+                    <TableHead>Cleanliness</TableHead>
+                    <TableHead>Branding</TableHead>
+                    <TableHead>Operations</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Audit</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getDetailedPropertyData()
+                    .filter(property => selectedRegion === 'all' || property.region === selectedRegion)
+                    .map((property: any) => (
+                    <TableRow key={property.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
                           <img 
                             src={property.image}
                             alt={property.name}
-                            className="w-12 h-12 rounded-xl object-cover mr-4 shadow-md"
+                            className="w-10 h-10 rounded object-cover"
                           />
                           <div>
-                            <div className="text-sm font-semibold text-gray-900">{property.name}</div>
-                            <div className="text-xs text-gray-600">{property.location}</div>
+                            <div className="font-medium">{property.name}</div>
+                            <div className="text-sm text-gray-500">{property.location}</div>
                           </div>
                         </div>
-                      </td>
-                      <td className="table-cell">
-                        <span className={property.score >= 75 ? "status-badge-amber" : "status-badge-red"}>
-                          {property.score}%
-                        </span>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {property.issues.join(', ')}
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-600">{property.lastAudit}</div>
-                      </td>
-                      <td className="table-cell">
-                        <button className="text-amber-600 hover:text-amber-800 font-medium text-sm px-4 py-2 rounded-lg hover:bg-amber-50 transition-colors">
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>{property.region}</TableCell>
+                      <TableCell>
+                        <Badge className={property.latestScore >= 85 ? 'bg-green-100 text-green-800' : property.latestScore >= 70 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                          {property.latestScore}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{property.latestCleanliness}%</TableCell>
+                      <TableCell>{property.latestBranding}%</TableCell>
+                      <TableCell>{property.latestOperational}%</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          property.complianceZone === 'green' ? 'border-green-500 text-green-700' :
+                          property.complianceZone === 'amber' ? 'border-yellow-500 text-yellow-700' :
+                          'border-red-500 text-red-700'
+                        }>
+                          {property.complianceZone}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{property.lastAuditDate}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => viewPropertyDetails(property)}
+                          className="mr-2"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

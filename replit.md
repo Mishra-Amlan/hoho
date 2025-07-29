@@ -6,6 +6,13 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 
 ## Recent Changes (January 29, 2025)
 
+✓ **MAJOR: Enhanced Corporate Dashboard with Regional Performance Analytics**
+✓ Comprehensive regional performance table with real audit data
+✓ Export functionality for CSV reports with filtering by region
+✓ Detailed property performance view with modal dialogs showing scores, findings, and action plans
+✓ Regional summary cards with compliance rates and trend indicators
+✓ Advanced filtering and sorting capabilities for performance analysis
+
 ✓ **MAJOR: Real-time Score Calculation System Implemented**
 ✓ Overall scores now calculate dynamically from individual audit item scores (0-5 scale → 0-100 scale)
 ✓ Category-specific scoring: Cleanliness (40% weight), Branding (30% weight), Operations (30% weight)  
