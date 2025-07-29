@@ -24,6 +24,7 @@ export default function ReviewerDashboard() {
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>({});
   const [aiAnalysisResults, setAiAnalysisResults] = useState<Record<string, { score: number; aiAnalysis: string; isOverridden?: boolean }>>({});
   const [analyzingItems, setAnalyzingItems] = useState<Set<number>>(new Set());
+  const [isRunningComprehensiveAnalysis, setIsRunningComprehensiveAnalysis] = useState(false);
 
   // Fetch audits assigned to this reviewer that are submitted
   const { data: allAudits = [], isLoading } = useAudits({ reviewerId: user?.id });
@@ -244,24 +245,32 @@ export default function ReviewerDashboard() {
     }
   };
 
-  const handleRunAllItemsAnalysis = async () => {
+  const handleRunComprehensiveAnalysis = async () => {
     if (!selectedAudit || !auditItems.length) return;
     
-    // Analyze all items in parallel
-    const promises = auditItems.map((item: any) => analyzeIndividualItem(item.id, item));
+    setIsRunningComprehensiveAnalysis(true);
     
     try {
-      await Promise.all(promises);
+      // Step 1: Analyze all individual items with enhanced media analysis
+      const itemAnalysisPromises = auditItems.map((item: any) => analyzeIndividualItem(item.id, item));
+      await Promise.all(itemAnalysisPromises);
+      
+      // Step 2: Run overall audit analysis
+      await analyzeAudit.mutateAsync(selectedAudit.id);
+      
       toast({
-        title: "Analysis Complete",
-        description: `All ${auditItems.length} items analyzed successfully`,
+        title: "Comprehensive Analysis Complete",
+        description: `AI has analyzed all ${auditItems.length} items and generated overall audit scores based on both text descriptions and visual media content.`,
       });
     } catch (error) {
+      console.error('Comprehensive analysis error:', error);
       toast({
-        title: "Analysis Partially Failed",
-        description: "Some items could not be analyzed. Check individual items.",
+        title: "Analysis Failed",
+        description: "Could not complete comprehensive analysis. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsRunningComprehensiveAnalysis(false);
     }
   };
 
@@ -525,48 +534,23 @@ export default function ReviewerDashboard() {
                       <div className="p-6 bg-blue-50 rounded-lg">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-semibold text-lg text-blue-800">AI Analysis Results</h3>
-                          <div className="flex space-x-2">
-                            <Button 
-                              onClick={handleRunAllItemsAnalysis}
-                              disabled={Array.from(analyzingItems).length > 0}
-                              variant="outline"
-                              size="sm"
-                              className="border-green-500 text-green-600 hover:bg-green-100"
-                            >
-                              {Array.from(analyzingItems).length > 0 ? (
-                                <>
-                                  <Zap className="h-4 w-4 mr-2 animate-spin" />
-                                  Analyzing Items...
-                                </>
-                              ) : (
-                                <>
-                                  <Brain className="h-4 w-4 mr-2" />
-                                  Analyze All Items
-                                </>
-                              )}
-                            </Button>
-                            {!selectedAudit.overallScore && (
-                              <Button 
-                                onClick={handleRunAIAnalysis}
-                                disabled={analyzeAudit.isPending}
-                                variant="outline"
-                                size="sm"
-                                className="border-blue-500 text-blue-600 hover:bg-blue-100"
-                              >
-                                {analyzeAudit.isPending ? (
-                                  <>
-                                    <Zap className="h-4 w-4 mr-2 animate-spin" />
-                                    Analyzing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Brain className="h-4 w-4 mr-2" />
-                                    Run Overall Analysis
-                                  </>
-                                )}
-                              </Button>
+                          <Button 
+                            onClick={handleRunComprehensiveAnalysis}
+                            disabled={isRunningComprehensiveAnalysis || Array.from(analyzingItems).length > 0 || analyzeAudit.isPending}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {isRunningComprehensiveAnalysis ? (
+                              <>
+                                <Zap className="h-4 w-4 mr-2 animate-spin" />
+                                Running Comprehensive Analysis...
+                              </>
+                            ) : (
+                              <>
+                                <Brain className="h-4 w-4 mr-2" />
+                                Run AI Analysis
+                              </>
                             )}
-                          </div>
+                          </Button>
                         </div>
                         
                         {selectedAudit.overallScore ? (
@@ -603,7 +587,7 @@ export default function ReviewerDashboard() {
                           <div className="text-center py-8">
                             <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
                             <p className="text-blue-700 font-medium">AI Analysis Not Started</p>
-                            <p className="text-sm text-blue-600">Click "Run AI Analysis" to generate intelligent scoring and insights for this audit.</p>
+                            <p className="text-sm text-blue-600">Click "Run AI Analysis" to analyze both individual items and generate overall audit scores based on visual media content and text descriptions.</p>
                           </div>
                         )}
                         

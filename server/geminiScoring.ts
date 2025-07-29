@@ -183,12 +183,33 @@ SCORING CRITERIA:
 - 1: Poor - Significant problems requiring immediate action
 - 0: Critical Failure - Does not meet minimum standards, major compliance issues
 
-Consider the auditor's comments, any evidence provided (photos, videos, text notes), and the specific requirements for this checklist item. When photos are provided, analyze them for cleanliness, brand compliance, operational standards, and overall quality.`;
+Analyze the auditor's comments AND any visual evidence (photos/videos) provided. When analyzing images, look for:
+- Cleanliness and hygiene standards
+- Brand compliance (logos, colors, signage)
+- Operational efficiency and organization
+- Safety and maintenance issues
+- Overall quality and presentation`;
 
-    // Parse media evidence if available
+    // Parse media evidence and prepare content for analysis
+    let contentParts: any[] = [];
     let mediaContext = 'No evidence provided';
     let mediaItems: any[] = [];
     
+    // Add text prompt
+    let textPrompt = `Analyze this hotel audit checklist item:
+
+Category: ${auditItem.category}
+Item: ${auditItem.item}
+Auditor Comments: ${auditItem.comments || 'No comments provided'}
+Current Status: ${auditItem.status || 'Not completed'}
+
+${checklistDetails ? `
+Checklist Details:
+- Description: ${checklistDetails.description || 'N/A'}
+- Weight: ${checklistDetails.weight || 'Standard'}
+- Max Score: ${checklistDetails.maxScore || 5}
+` : ''}`;
+
     if (auditItem.photos && auditItem.photos !== '[]' && auditItem.photos !== 'null') {
       try {
         mediaItems = JSON.parse(auditItem.photos);
@@ -198,6 +219,19 @@ Consider the auditor's comments, any evidence provided (photos, videos, text not
         
         mediaContext = `Evidence provided: ${photoCount} photos, ${videoCount} videos, ${textCount} text notes`;
         
+        // Add photos for visual analysis
+        const photoItems = mediaItems.filter(item => item.type === 'photo' && item.content);
+        for (const photo of photoItems.slice(0, 3)) { // Limit to 3 photos to avoid token limits
+          if (photo.content && photo.content.startsWith('data:image/')) {
+            contentParts.push({
+              inlineData: {
+                mimeType: photo.content.split(',')[0].split(':')[1].split(';')[0],
+                data: photo.content.split(',')[1]
+              }
+            });
+          }
+        }
+        
         // Add text content from media items
         const textContent = mediaItems
           .filter(item => item.type === 'text' && item.content)
@@ -205,7 +239,11 @@ Consider the auditor's comments, any evidence provided (photos, videos, text not
           .join('\n');
         
         if (textContent) {
-          mediaContext += `\n\nText Evidence:\n${textContent}`;
+          textPrompt += `\n\nText Evidence:\n${textContent}`;
+        }
+        
+        if (photoItems.length > 0) {
+          textPrompt += `\n\nPlease analyze the ${photoItems.length} photo(s) provided along with the text information.`;
         }
       } catch (e) {
         console.error('Error parsing media items:', e);
@@ -213,26 +251,14 @@ Consider the auditor's comments, any evidence provided (photos, videos, text not
       }
     }
 
-    const analysisPrompt = `Analyze this hotel audit checklist item:
-
-Category: ${auditItem.category}
-Item: ${auditItem.item}
-Auditor Comments: ${auditItem.comments || 'No comments provided'}
-${mediaContext}
-Current Status: ${auditItem.status || 'Not completed'}
-
-${checklistDetails ? `
-Checklist Details:
-- Description: ${checklistDetails.description || 'N/A'}
-- Weight: ${checklistDetails.weight || 'Standard'}
-- Max Score: ${checklistDetails.maxScore || 5}
-` : ''}
-
-Please provide a JSON response with:
+    textPrompt += `\n\nPlease provide a JSON response with:
 {
   "score": number (0-5),
-  "aiAnalysis": "Detailed analysis explaining the score based on auditor comments and evidence provided. Include specific observations about photos/videos if available and provide actionable recommendations."
+  "aiAnalysis": "Detailed analysis explaining the score based on auditor comments and visual evidence. Include specific observations about what you see in photos/videos and provide actionable recommendations."
 }`;
+
+    // Add text prompt as first content part
+    contentParts.unshift({ text: textPrompt });
 
     const response = await rateLimitedApiCall(() => 
       ai.models.generateContent({
@@ -249,7 +275,7 @@ Please provide a JSON response with:
             required: ["score", "aiAnalysis"]
           }
         },
-        contents: analysisPrompt
+        contents: contentParts
       })
     );
 
