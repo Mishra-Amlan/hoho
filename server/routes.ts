@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiAnalysis: aiAnalysis || undefined,
       });
       
-      // Recalculate overall audit scores based on individual item scores
+      // Recalculate overall audit scores based on individual item scores  
       if (auditId) {
         const updatedAudit = await recalculateAuditScores(auditId);
         res.json({ updatedItem, updatedAudit });

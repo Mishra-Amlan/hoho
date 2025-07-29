@@ -6,8 +6,14 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 
 ## Recent Changes (January 29, 2025)
 
+✓ **MAJOR: Real-time Score Calculation System Implemented**
+✓ Overall scores now calculate dynamically from individual audit item scores (0-5 scale → 0-100 scale)
+✓ Category-specific scoring: Cleanliness (40% weight), Branding (30% weight), Operations (30% weight)  
+✓ Real-time updates when reviewers override individual item scores
+✓ Visual indicators showing "calculated from X analyzed items" status
+✓ Fallback to static scores only when no individual items have been analyzed
+
 ✓ **PROJECT MIGRATION COMPLETED: Successfully migrated hotel audit platform from Replit Agent to standard Replit environment**
-✓ **Real-time Score Calculation**: Fixed overall score calculation to update in real-time based on individual item scores
 ✓ **Enhanced AI Analysis**: Improved AI analysis workflow with better error handling and fallback scoring
 ✓ **Database Migration**: PostgreSQL database configured with proper environment variables and seeded with demo data
 ✓ **AI Integration**: Gemini API key configured for intelligent audit analysis with rate limiting protection

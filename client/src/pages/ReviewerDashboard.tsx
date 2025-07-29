@@ -276,9 +276,9 @@ export default function ReviewerDashboard() {
     }
   };
 
-  // Calculate overall score from individual item scores
-  const calculateOverallScore = () => {
-    if (!auditItems.length) return 0;
+  // Calculate real-time scores from individual item scores
+  const calculateRealTimeScores = () => {
+    if (!auditItems.length) return { overall: 0, cleanliness: 0, branding: 0, operational: 0 };
     
     // Get items that have been analyzed (have AI results or existing scores)
     const analyzedItems = auditItems.filter((item: any) => {
@@ -286,16 +286,56 @@ export default function ReviewerDashboard() {
       return aiResult || item.score;
     });
     
-    if (analyzedItems.length === 0) return 0;
+    if (analyzedItems.length === 0) return { overall: 0, cleanliness: 0, branding: 0, operational: 0 };
     
-    const totalScore = analyzedItems.reduce((sum: number, item: any) => {
+    // Group items by category for detailed scoring
+    const categoryScores = {
+      cleanliness: [] as number[],
+      branding: [] as number[],
+      operational: [] as number[]
+    };
+    
+    analyzedItems.forEach((item: any) => {
       const aiResult = aiAnalysisResults[item.id];
       const score = aiResult ? aiResult.score : (item.score || 0);
-      return sum + score;
-    }, 0);
+      const category = item.category.toLowerCase();
+      
+      if (category.includes('clean') || category.includes('maintenance') || category.includes('hygiene')) {
+        categoryScores.cleanliness.push(score);
+      } else if (category.includes('brand') || category.includes('signage') || category.includes('logo') || category.includes('uniform')) {
+        categoryScores.branding.push(score);
+      } else {
+        categoryScores.operational.push(score);
+      }
+    });
     
-    // Calculate percentage based on analyzed items only
-    return Math.round((totalScore / (analyzedItems.length * 5)) * 100);
+    // Calculate category averages (convert 0-5 scale to 0-100)
+    const cleanlinessScore = categoryScores.cleanliness.length > 0 
+      ? Math.round((categoryScores.cleanliness.reduce((a, b) => a + b, 0) / categoryScores.cleanliness.length) * 20)
+      : 0;
+      
+    const brandingScore = categoryScores.branding.length > 0
+      ? Math.round((categoryScores.branding.reduce((a, b) => a + b, 0) / categoryScores.branding.length) * 20)
+      : 0;
+      
+    const operationalScore = categoryScores.operational.length > 0
+      ? Math.round((categoryScores.operational.reduce((a, b) => a + b, 0) / categoryScores.operational.length) * 20)
+      : 0;
+    
+    // Calculate overall score as weighted average
+    const overallScore = Math.round((cleanlinessScore * 0.4 + brandingScore * 0.3 + operationalScore * 0.3));
+    
+    return {
+      overall: overallScore,
+      cleanliness: cleanlinessScore,
+      branding: brandingScore,
+      operational: operationalScore
+    };
+  };
+
+  // Calculate overall score for compatibility
+  const calculateOverallScore = () => {
+    return calculateRealTimeScores().overall;
   };
 
   // Get count of analyzed items for display
@@ -572,35 +612,52 @@ export default function ReviewerDashboard() {
                           </Button>
                         </div>
                         
-                        {selectedAudit.overallScore ? (
+                        {(selectedAudit.overallScore || getAnalyzedItemsCount() > 0) ? (
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-blue-700">Overall Score:</span>
-                              <span className="text-2xl font-bold text-blue-800">{selectedAudit.overallScore}/100</span>
-                            </div>
-                            
-                            <Progress value={selectedAudit.overallScore} className="h-3" />
-                            
-                            <div className="grid grid-cols-3 gap-4 mt-6">
-                              <div className="text-center">
-                                <div className="text-lg font-semibold text-gray-800">
-                                  {selectedAudit.cleanlinessScore || 'N/A'}
-                                </div>
-                                <div className="text-sm text-gray-600">Cleanliness</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-semibold text-gray-800">
-                                  {selectedAudit.brandingScore || 'N/A'}
-                                </div>
-                                <div className="text-sm text-gray-600">Branding</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-semibold text-gray-800">
-                                  {selectedAudit.operationalScore || 'N/A'}
-                                </div>
-                                <div className="text-sm text-gray-600">Operations</div>
-                              </div>
-                            </div>
+                            {/* Real-time calculated scores */}
+                            {(() => {
+                              const realTimeScores = calculateRealTimeScores();
+                              const displayScore = getAnalyzedItemsCount() > 0 ? realTimeScores.overall : selectedAudit.overallScore;
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-blue-700">Overall Score:</span>
+                                    <span className="text-2xl font-bold text-blue-800">{displayScore}/100</span>
+                                  </div>
+                                  
+                                  <Progress value={displayScore} className="h-3" />
+                                  
+                                  <div className="grid grid-cols-3 gap-4 mt-6">
+                                    <div className="text-center">
+                                      <div className="text-lg font-semibold text-gray-800">
+                                        {getAnalyzedItemsCount() > 0 ? realTimeScores.cleanliness : (selectedAudit.cleanlinessScore || 'N/A')}
+                                      </div>
+                                      <div className="text-sm text-gray-600">Cleanliness</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-lg font-semibold text-gray-800">
+                                        {getAnalyzedItemsCount() > 0 ? realTimeScores.branding : (selectedAudit.brandingScore || 'N/A')}
+                                      </div>
+                                      <div className="text-sm text-gray-600">Branding</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-lg font-semibold text-gray-800">
+                                        {getAnalyzedItemsCount() > 0 ? realTimeScores.operational : (selectedAudit.operationalScore || 'N/A')}
+                                      </div>
+                                      <div className="text-sm text-gray-600">Operations</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {getAnalyzedItemsCount() > 0 && (
+                                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                                      <p className="text-sm text-green-700 font-medium">
+                                        ✓ Real-time scores calculated from {getAnalyzedItemsCount()} analyzed items
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <div className="text-center py-8">
