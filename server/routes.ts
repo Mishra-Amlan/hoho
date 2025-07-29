@@ -5,6 +5,7 @@ import { insertUserSchema, insertHotelGroupSchema } from "@shared/schema";
 import type { AuditItem } from "@shared/schema";
 import { z } from "zod";
 import { seedDatabase } from "./seedDatabase";
+import { generateCorrectiveActionPlan } from "./geminiScoring";
 
 // Function to calculate audit scores from audit items
 function calculateAuditScores(auditItems: AuditItem[]) {
@@ -413,6 +414,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Individual AI Analysis error:', error);
       res.status(500).json({ message: "Failed to analyze audit item", error: (error as Error).message });
+    }
+  });
+
+  // Generate Corrective Action Plan endpoint
+  app.post("/api/audits/:auditId/action-plan", async (req, res) => {
+    try {
+      const auditId = parseInt(req.params.auditId);
+      const audit = await storage.getAudit(auditId);
+      
+      if (!audit) {
+        return res.status(404).json({ message: "Audit not found" });
+      }
+      
+      // Get property details for the action plan
+      const property = await storage.getProperty(audit.propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      const auditItems = await storage.getAuditItems(auditId);
+      const actionPlan = await generateCorrectiveActionPlan(audit, auditItems, property.name);
+      
+      res.json(actionPlan);
+    } catch (error) {
+      console.error('Action Plan generation error:', error);
+      res.status(500).json({ 
+        message: "Failed to generate action plan", 
+        error: (error as Error).message 
+      });
     }
   });
 

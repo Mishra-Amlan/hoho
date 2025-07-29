@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap, Award, Target, Calendar } from 'lucide-react';
+import { AlertCircle, BarChart3, Building, CheckCircle, Clock, MessageSquare, Send, TrendingUp, Users, Zap, Award, Target, Calendar, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { CorrectiveActionPlan } from '@/components/CorrectiveActionPlan';
 
 export default function HotelGMDashboard() {
   const { user } = useAuth();
@@ -350,61 +351,32 @@ export default function HotelGMDashboard() {
           </CardContent>
         </Card>
 
-        {/* Action Plan */}
+        {/* AI-Powered Corrective Action Plan */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Corrective Action Plan</CardTitle>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <i className="fas fa-plus mr-2"></i>Add Action
-              </Button>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              AI-Powered Corrective Action Plan
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {actionPlan.map((action) => (
-                <div key={action.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{action.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{action.description}</p>
-                      <div className="flex items-center space-x-4 mt-3">
-                        <Badge 
-                          variant={action.priority === 'high' ? 'destructive' : 
-                                  action.priority === 'medium' ? 'default' : 'secondary'}
-                          className={action.priority === 'high' ? 'bg-yellow-100 text-yellow-800' :
-                                    action.priority === 'medium' ? 'bg-green-100 text-green-800' :
-                                    'bg-blue-100 text-blue-800'}
-                        >
-                          {action.priority.charAt(0).toUpperCase() + action.priority.slice(1)} Priority
-                        </Badge>
-                        <span className="text-xs text-gray-500">Due: {action.dueDate}</span>
-                        <span className="text-xs text-gray-500">Assigned: {action.assignedTo}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <div className="w-20 h-2 bg-gray-200 rounded-full">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            action.status === 'completed' ? 'bg-green-500' :
-                            action.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-400'
-                          }`}
-                          style={{ width: `${action.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className={`text-xs ${
-                        action.status === 'completed' ? 'text-green-600' :
-                        action.status === 'in_progress' ? 'text-yellow-600' : 'text-gray-600'
-                      }`}>
-                        {action.progress}%
-                      </span>
-                    </div>
-                  </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-2">Get Personalized Improvement Recommendations</h3>
+              <p className="text-sm text-blue-700 mb-4">
+                Our AI analyzes your latest audit findings to generate specific, actionable recommendations tailored to your property's needs, including timelines, responsibilities, and budget estimates.
+              </p>
+              {latestAudit && (
+                <CorrectiveActionPlan 
+                  auditId={latestAudit.id}
+                  propertyName={property?.name || 'Your Property'}
+                  auditScore={latestAudit.overallScore || 0}
+                />
+              )}
+              {!latestAudit && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-600 text-center">No recent audit data available. Complete an audit to generate AI recommendations.</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

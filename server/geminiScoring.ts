@@ -13,6 +13,214 @@ interface AIAnalysisResult {
   actionPlan: string;
 }
 
+interface CorrectiveActionPlan {
+  propertyName: string;
+  auditDate: string;
+  overallScore: number;
+  complianceZone: string;
+  criticalIssues: string[];
+  immediateActions: {
+    title: string;
+    description: string;
+    timeline: string;
+    responsibility: string;
+    priority: 'High' | 'Medium' | 'Low';
+  }[];
+  improvementRecommendations: {
+    category: string;
+    recommendation: string;
+    expectedOutcome: string;
+    implementationCost: string;
+    timeline: string;
+  }[];
+  followUpSchedule: {
+    action: string;
+    timeline: string;
+    responsible: string;
+  }[];
+  budgetEstimate: {
+    category: string;
+    estimatedCost: string;
+    justification: string;
+  }[];
+}
+
+export async function generateCorrectiveActionPlan(
+  audit: Audit, 
+  auditItems: AuditItem[], 
+  propertyName: string
+): Promise<CorrectiveActionPlan> {
+  try {
+    const auditContext = {
+      propertyName,
+      auditDate: audit.submittedAt || audit.createdAt,
+      overallScore: audit.overallScore,
+      cleanlinessScore: audit.cleanlinessScore,
+      brandingScore: audit.brandingScore,
+      operationalScore: audit.operationalScore,
+      complianceZone: audit.complianceZone,
+      findings: audit.findings,
+      categories: groupItemsByCategory(auditItems),
+      observations: auditItems.map(item => ({
+        category: item.category,
+        item: item.item,
+        comments: item.comments,
+        score: item.score,
+        hasEvidence: item.photos && item.photos.length > 0
+      }))
+    };
+
+    const systemPrompt = `You are an expert hotel operations consultant specializing in franchise compliance and operational improvements. Generate a comprehensive Corrective Action Plan for hotel franchisee owners based on audit findings.
+
+FOCUS AREAS:
+- Immediate critical issues requiring urgent attention
+- Cost-effective improvement recommendations
+- Clear timelines and responsibilities
+- Realistic budget estimates
+- Measurable outcomes and follow-up schedules
+
+PRIORITIZATION:
+- Safety and compliance issues (High priority)
+- Brand standard violations (Medium-High priority)
+- Guest experience improvements (Medium priority)
+- Operational efficiency gains (Low-Medium priority)
+
+Provide actionable, specific recommendations that a franchisee owner can implement.`;
+
+    const planPrompt = `Generate a comprehensive Corrective Action Plan for this hotel audit:
+
+Property: ${auditContext.propertyName}
+Audit Date: ${new Date(auditContext.auditDate).toLocaleDateString()}
+Overall Score: ${auditContext.overallScore}%
+Compliance Zone: ${auditContext.complianceZone}
+
+Detailed Findings: ${auditContext.findings}
+
+Category Scores:
+- Cleanliness: ${auditContext.cleanlinessScore}%
+- Branding: ${auditContext.brandingScore}%
+- Operations: ${auditContext.operationalScore}%
+
+Specific Issues Found:
+${Object.entries(auditContext.categories).map(([category, items]) => 
+  `\n${category}:
+${items.map((item: any) => 
+  `- ${item.item}: Score ${item.score || 'N/A'}/5 - ${item.comments || 'No comments'} ${item.hasEvidence ? '(Evidence documented)' : ''}`
+).join('\n')}`
+).join('\n')}
+
+Please provide a detailed JSON response with the following structure:
+{
+  "propertyName": "${auditContext.propertyName}",
+  "auditDate": "${new Date(auditContext.auditDate).toLocaleDateString()}",
+  "overallScore": ${auditContext.overallScore},
+  "complianceZone": "${auditContext.complianceZone}",
+  "criticalIssues": ["List of critical issues requiring immediate attention"],
+  "immediateActions": [
+    {
+      "title": "Action title",
+      "description": "Detailed description of what needs to be done",
+      "timeline": "Specific timeframe (e.g., 24 hours, 1 week)",
+      "responsibility": "Who should handle this (e.g., GM, Housekeeping Manager)",
+      "priority": "High/Medium/Low"
+    }
+  ],
+  "improvementRecommendations": [
+    {
+      "category": "Cleanliness/Branding/Operations",
+      "recommendation": "Specific improvement recommendation",
+      "expectedOutcome": "What improvement this will achieve",
+      "implementationCost": "Estimated cost range",
+      "timeline": "Implementation timeframe"
+    }
+  ],
+  "followUpSchedule": [
+    {
+      "action": "Follow-up action required",
+      "timeline": "When to complete",
+      "responsible": "Who is responsible"
+    }
+  ],
+  "budgetEstimate": [
+    {
+      "category": "Budget category",
+      "estimatedCost": "Cost estimate",
+      "justification": "Why this investment is needed"
+    }
+  ]
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-pro",
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json"
+      },
+      prompt: planPrompt
+    });
+
+    const result = JSON.parse(response.response.text());
+    return result as CorrectiveActionPlan;
+
+  } catch (error) {
+    console.error('Error generating corrective action plan:', error);
+    
+    // Fallback plan based on audit data
+    return generateFallbackActionPlan(audit, auditItems, propertyName);
+  }
+}
+
+function generateFallbackActionPlan(audit: Audit, auditItems: AuditItem[], propertyName: string): CorrectiveActionPlan {
+  const lowScoreItems = auditItems.filter(item => item.score && item.score < 4);
+  
+  return {
+    propertyName,
+    auditDate: new Date(audit.submittedAt || audit.createdAt).toLocaleDateString(),
+    overallScore: audit.overallScore || 0,
+    complianceZone: audit.complianceZone || 'red',
+    criticalIssues: lowScoreItems.slice(0, 3).map(item => `${item.category}: ${item.item}`),
+    immediateActions: [
+      {
+        title: "Address Critical Compliance Issues",
+        description: "Review and resolve all items scoring below 4/5 in the audit",
+        timeline: "7 days",
+        responsibility: "General Manager",
+        priority: "High" as const
+      },
+      {
+        title: "Staff Training Update",
+        description: "Conduct refresher training on brand standards and operational procedures",
+        timeline: "14 days",
+        responsibility: "Department Managers",
+        priority: "Medium" as const
+      }
+    ],
+    improvementRecommendations: [
+      {
+        category: "Operations",
+        recommendation: "Implement daily quality checks and monitoring systems",
+        expectedOutcome: "Improved consistency in service delivery",
+        implementationCost: "$500-1000",
+        timeline: "30 days"
+      }
+    ],
+    followUpSchedule: [
+      {
+        action: "Re-audit critical areas",
+        timeline: "30 days",
+        responsible: "QA Team"
+      }
+    ],
+    budgetEstimate: [
+      {
+        category: "Training & Development",
+        estimatedCost: "$1,000-2,500",
+        justification: "Essential for maintaining brand standards and compliance"
+      }
+    ]
+  };
+}
+
 export async function analyzeAuditData(audit: Audit, auditItems: AuditItem[]): Promise<AIAnalysisResult> {
   try {
     // Prepare audit data for AI analysis
