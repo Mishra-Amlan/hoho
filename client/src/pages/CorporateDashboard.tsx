@@ -46,12 +46,13 @@ export default function CorporateDashboard() {
     refetchInterval: 30000
   });
 
-  // Calculate real-time KPIs
+  // Calculate real-time KPIs from approved audits only
+  const approvedAudits = (audits as any[]).filter((audit: any) => audit.status === 'approved');
   const kpiData = {
-    overallCompliance: (audits as any[]).length > 0 ? Math.round((audits as any[]).reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / (audits as any[]).length) : 0,
+    overallCompliance: approvedAudits.length > 0 ? Math.round(approvedAudits.reduce((sum: number, audit: any) => sum + (audit.overallScore || 0), 0) / approvedAudits.length) : 0,
     totalProperties: (properties as any[]).length,
-    criticalIssues: (audits as any[]).filter((audit: any) => audit.overallScore && audit.overallScore < 70).length,
-    auditsThisMonth: (audits as any[]).filter((audit: any) => {
+    criticalIssues: approvedAudits.filter((audit: any) => audit.overallScore && audit.overallScore < 70).length,
+    auditsThisMonth: approvedAudits.filter((audit: any) => {
       const auditDate = new Date(audit.submittedAt || audit.createdAt);
       const now = new Date();
       return auditDate.getMonth() === now.getMonth() && auditDate.getFullYear() === now.getFullYear();
@@ -602,7 +603,7 @@ export default function CorporateDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">Total Audits Completed</span>
-                  <span className="text-2xl font-bold text-green-600">{(audits as any[]).filter(a => a.status === 'approved').length}</span>
+                  <span className="text-2xl font-bold text-green-600">{approvedAudits.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">Average Score</span>
