@@ -49,20 +49,32 @@ interface CorrectiveActionPlanProps {
 
 export function CorrectiveActionPlan({ auditId, propertyName, auditScore, triggerButton }: CorrectiveActionPlanProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [actionPlan, setActionPlan] = useState<CorrectiveActionPlan | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const { data: actionPlan, isLoading, error, refetch } = useQuery<CorrectiveActionPlan>({
-    queryKey: [`/api/audits/${auditId}/action-plan`],
-    enabled: false // Don't auto-fetch, only when requested
-  });
+  const [error, setError] = useState<string | null>(null);
 
   const generateActionPlan = async () => {
     setIsGenerating(true);
+    setError(null);
     try {
-      await refetch();
+      const response = await apiRequest(`/api/audits/${auditId}/action-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate action plan');
+      }
+      
+      const planData = await response.json();
+      setActionPlan(planData);
       setIsOpen(true);
     } catch (error) {
       console.error('Failed to generate action plan:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate action plan');
     } finally {
       setIsGenerating(false);
     }
@@ -143,16 +155,24 @@ export function CorrectiveActionPlan({ auditId, propertyName, auditScore, trigge
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading && (
+        {isGenerating && (
           <div className="flex items-center justify-center py-8">
             <Zap className="h-6 w-6 mr-2 animate-spin" />
             <span>Generating action plan with AI...</span>
           </div>
         )}
 
-        {error && (
+        {error && !isGenerating && !actionPlan && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">Failed to generate action plan. Please try again.</p>
+            <p className="text-red-800">{error}</p>
+            <Button 
+              onClick={generateActionPlan} 
+              className="mt-3"
+              disabled={isGenerating}
+              size="sm"
+            >
+              Retry Generation
+            </Button>
           </div>
         )}
 
