@@ -528,15 +528,15 @@ export default function AdminDashboard() {
                   Schedule Audit
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-6">
+                <DialogHeader className="pb-4">
                   <DialogTitle>Schedule New Audit</DialogTitle>
                   <DialogDescription>
                     Create and assign a new audit to an auditor and reviewer
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="overflow-y-auto max-h-[70vh] pr-4">
+                <div className="overflow-y-auto max-h-[70vh] px-2 pb-4">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleScheduleAudit)} className="space-y-6">
                       {/* 1. Hotel Group */}
