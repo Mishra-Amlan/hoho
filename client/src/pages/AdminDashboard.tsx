@@ -528,7 +528,7 @@ export default function AdminDashboard() {
                   Schedule Audit
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>Schedule New Audit</DialogTitle>
                   <DialogDescription>
@@ -536,240 +536,248 @@ export default function AdminDashboard() {
                   </DialogDescription>
                 </DialogHeader>
                 
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleScheduleAudit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="propertyId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Property</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select property to audit" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {properties.map((property: any) => (
-                                <SelectItem key={property.id} value={property.id.toString()}>
-                                  {property.name} - {property.location}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="auditorId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Assign Auditor</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select auditor" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {auditors.map((auditor: any) => (
-                                <SelectItem key={auditor.id} value={auditor.id.toString()}>
-                                  {auditor.name} - {auditor.email}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="reviewerId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Assign Reviewer</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select reviewer" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {reviewers.map((reviewer: any) => (
-                                <SelectItem key={reviewer.id} value={reviewer.id.toString()}>
-                                  {reviewer.name} - {reviewer.email}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="hotelGroupId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hotel Group</FormLabel>
-                          <Select 
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              const group = hotelGroups.find((g: any) => g.id.toString() === value);
-                              setSelectedHotelGroup(group);
-                              // Load default SOP files if available
-                              if (group?.sopFiles) {
-                                try {
-                                  const files = JSON.parse(group.sopFiles);
-                                  setSopFiles(files);
-                                  form.setValue('sopFiles', files);
-                                } catch (e) {
-                                  // Handle parsing error
+                <div className="overflow-y-auto max-h-[70vh] pr-4">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleScheduleAudit)} className="space-y-6">
+                      {/* 1. Hotel Group */}
+                      <FormField
+                        control={form.control}
+                        name="hotelGroupId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hotel Group</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                const group = hotelGroups.find((g: any) => g.id.toString() === value);
+                                setSelectedHotelGroup(group);
+                                // Load default SOP files if available
+                                if (group?.sopFiles) {
+                                  try {
+                                    const files = JSON.parse(group.sopFiles);
+                                    setSopFiles(files);
+                                    form.setValue('sopFiles', files);
+                                  } catch (e) {
+                                    // Handle parsing error
+                                    setSopFiles([]);
+                                  }
+                                } else {
                                   setSopFiles([]);
                                 }
-                              } else {
-                                setSopFiles([]);
-                              }
-                            }} 
-                            defaultValue={field.value}
-                          >
+                              }} 
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select hotel group" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {hotelGroups.map((group: any) => (
+                                  <SelectItem key={group.id} value={group.id.toString()}>
+                                    {group.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* 2. Hotel Name (Property) */}
+                      <FormField
+                        control={form.control}
+                        name="propertyId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hotel Name</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select hotel property to audit" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {properties.map((property: any) => (
+                                  <SelectItem key={property.id} value={property.id.toString()}>
+                                    {property.name} - {property.location}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* 3. SOP */}
+                      <FormField
+                        control={form.control}
+                        name="sopFiles"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Standard Operating Procedures (SOPs)</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select hotel group" />
-                              </SelectTrigger>
+                              <SOPFileUpload
+                                files={sopFiles}
+                                onFilesChange={(files) => {
+                                  setSopFiles(files);
+                                  field.onChange(files);
+                                }}
+                                maxFiles={5}
+                                acceptedTypes={['.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg']}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {hotelGroups.map((group: any) => (
-                                <SelectItem key={group.id} value={group.id.toString()}>
-                                  {group.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <div className="text-sm text-gray-500">
+                              Upload SOP documents that will guide AI analysis and scoring during the audit process.
+                              {selectedHotelGroup && (
+                                <div className="mt-2 p-2 bg-blue-50 rounded border">
+                                  <strong>Selected Group:</strong> {selectedHotelGroup.name}
+                                  {selectedHotelGroup.sopFiles && (
+                                    <div className="mt-1 text-xs">
+                                      <em>Default SOP files have been loaded. You can add more or remove existing ones.</em>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="sopFiles"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Standard Operating Procedures (SOPs)</FormLabel>
-                          <FormControl>
-                            <SOPFileUpload
-                              files={sopFiles}
-                              onFilesChange={(files) => {
-                                setSopFiles(files);
-                                field.onChange(files);
-                              }}
-                              maxFiles={5}
-                              acceptedTypes={['.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg']}
-                            />
-                          </FormControl>
-                          <div className="text-sm text-gray-500">
-                            Upload SOP documents that will guide AI analysis and scoring during the audit process.
-                            {selectedHotelGroup && (
-                              <div className="mt-2 p-2 bg-blue-50 rounded border">
-                                <strong>Selected Group:</strong> {selectedHotelGroup.name}
-                                {selectedHotelGroup.sopFiles && (
-                                  <div className="mt-1 text-xs">
-                                    <em>Default SOP files have been loaded. You can add more or remove existing ones.</em>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      {/* 4. Auditor */}
+                      <FormField
+                        control={form.control}
+                        name="auditorId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assign Auditor</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select auditor" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {auditors.map((auditor: any) => (
+                                  <SelectItem key={auditor.id} value={auditor.id.toString()}>
+                                    {auditor.name} - {auditor.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="scheduledDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Scheduled Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="datetime-local"
-                              {...field}
-                              min={new Date().toISOString().slice(0, 16)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      {/* 5. Reviewer */}
+                      <FormField
+                        control={form.control}
+                        name="reviewerId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assign Reviewer</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select reviewer" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {reviewers.map((reviewer: any) => (
+                                  <SelectItem key={reviewer.id} value={reviewer.id.toString()}>
+                                    {reviewer.name} - {reviewer.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Priority</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      {/* Additional Fields */}
+                      <FormField
+                        control={form.control}
+                        name="scheduledDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Scheduled Date</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input
+                                type="datetime-local"
+                                {...field}
+                                min={new Date().toISOString().slice(0, 16)}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="low">Low Priority</SelectItem>
-                              <SelectItem value="medium">Medium Priority</SelectItem>
-                              <SelectItem value="high">High Priority</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Any special instructions or notes for the auditor..."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="priority"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Priority</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="low">Low Priority</SelectItem>
+                                <SelectItem value="medium">Medium Priority</SelectItem>
+                                <SelectItem value="high">High Priority</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <div className="flex space-x-3 pt-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => setShowScheduleModal(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        className="flex-1"
-                        disabled={createAudit.isPending}
-                      >
-                        {createAudit.isPending ? 'Scheduling...' : 'Schedule Audit'}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Any special instructions or notes for the auditor..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex space-x-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setShowScheduleModal(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          className="flex-1"
+                          disabled={createAudit.isPending}
+                        >
+                          {createAudit.isPending ? 'Scheduling...' : 'Schedule Audit'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
