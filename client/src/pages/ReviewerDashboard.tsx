@@ -915,17 +915,34 @@ export default function ReviewerDashboard() {
                           </div>
                         )}
                         
-                        <div className="flex justify-center pt-6 border-t">
-                          <Button
-                            onClick={handleApproveAudit}
-                            className="px-8 bg-green-600 hover:bg-green-700"
-                            disabled={updateAudit.isPending || !isAIAnalysisComplete()}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            {updateAudit.isPending ? 'Processing...' : 
-                             !isAIAnalysisComplete() ? 'Complete AI Analysis First' : 'Approve Audit'}
-                          </Button>
-                        </div>
+                        {/* Show approve button only for submitted audits, not already approved ones */}
+                        {selectedAudit?.status === 'submitted' && (
+                          <div className="flex justify-center pt-6 border-t">
+                            <Button
+                              onClick={handleApproveAudit}
+                              className="px-8 bg-green-600 hover:bg-green-700"
+                              disabled={updateAudit.isPending || !isAIAnalysisComplete()}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {updateAudit.isPending ? 'Processing...' : 
+                               !isAIAnalysisComplete() ? 'Complete AI Analysis First' : 'Approve Audit'}
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* Show read-only message for approved audits */}
+                        {selectedAudit?.status === 'approved' && (
+                          <div className="flex justify-center pt-6 border-t">
+                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <span className="text-sm font-medium text-green-800">
+                                  This audit has already been approved and is now read-only.
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                   </Tabs>

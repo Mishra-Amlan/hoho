@@ -164,7 +164,7 @@ export default function AuditorDashboard() {
       console.error('Submission error:', error);
       toast({
         title: "Submission Failed",
-        description: `Unable to submit audit: ${error.message}`,
+        description: `Unable to submit audit: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -669,26 +669,43 @@ export default function AuditorDashboard() {
                   className="min-h-24"
                 />
                 
-                {/* Submit Actions */}
-                <div className="flex space-x-4 mt-6">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={handleSaveDraft}
-                    disabled={updateAudit.isPending}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
-                  </Button>
-                  <Button 
-                    className="flex-1 bg-green-500 hover:bg-green-600"
-                    onClick={handleSubmitForReview}
-                    disabled={updateAudit.isPending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
-                  </Button>
-                </div>
+                {/* Submit Actions - Only show for audits that can be edited */}
+                {(activeAudit?.status === 'scheduled' || activeAudit?.status === 'in_progress') && (
+                  <div className="flex space-x-4 mt-6">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={handleSaveDraft}
+                      disabled={updateAudit.isPending}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {updateAudit.isPending ? 'Saving...' : 'Save Draft'}
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-green-500 hover:bg-green-600"
+                      onClick={handleSubmitForReview}
+                      disabled={updateAudit.isPending}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {updateAudit.isPending ? 'Submitting...' : 'Submit for Review'}
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Show read-only message for completed audits */}
+                {(activeAudit?.status === 'submitted' || activeAudit?.status === 'approved' || activeAudit?.status === 'completed' || activeAudit?.status === 'needs_revision') && (
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">
+                        {activeAudit?.status === 'submitted' && 'This audit has been submitted for review and cannot be modified.'}
+                        {activeAudit?.status === 'approved' && 'This audit has been approved and is now read-only.'}
+                        {activeAudit?.status === 'completed' && 'This audit has been completed and is now read-only.'}
+                        {activeAudit?.status === 'needs_revision' && 'This audit needs revision. Please contact your supervisor for next steps.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
