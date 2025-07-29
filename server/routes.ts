@@ -520,13 +520,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     itemsWithScores.forEach(item => {
       const score = item.score!;
-      const category = item.category.toLowerCase();
+      const category = item.category;
       
-      if (category.includes('clean') || category.includes('maintenance') || category.includes('hygiene')) {
+      // Match actual database categories
+      if (category === 'Cleanliness' || 
+          category === 'Room Experience & Amenities' ||
+          category.includes('clean') || category.includes('maintenance') || category.includes('hygiene')) {
         categoryScores.cleanliness.push(score);
-      } else if (category.includes('brand') || category.includes('signage') || category.includes('logo') || category.includes('uniform')) {
+      } else if (category === 'Branding' || 
+                 category === 'Staff Interaction & Service' ||
+                 category.includes('brand') || category.includes('signage') || category.includes('logo') || category.includes('uniform')) {
         categoryScores.branding.push(score);
       } else {
+        // All other categories: Arrival & Check-In, Dining Experience, Operational
         categoryScores.operational.push(score);
       }
     });
