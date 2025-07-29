@@ -13,6 +13,7 @@ import { HOTEL_AUDIT_CHECKLIST } from '@shared/auditChecklist';
 import { useAudits, useUpdateAudit, useAuditItems, useProperties } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { CheckCircle, XCircle, AlertTriangle, Clock, Eye, MessageSquare, Brain, Zap } from 'lucide-react';
 import MediaDisplay from '@/components/MediaDisplay';
 
@@ -146,8 +147,9 @@ export default function ReviewerDashboard() {
         title: "AI Analysis Complete",
         description: "The audit has been analyzed and scored by AI.",
       });
-      // Refetch audit data to get updated scores
-      window.location.reload();
+      // Instead of hard refresh, invalidate the cache to refetch data
+      queryClient.invalidateQueries({ queryKey: ['/api/audits'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/audits', selectedAudit?.id, 'items'] });
     },
     onError: (error) => {
       console.error('AI analysis error:', error);
