@@ -699,8 +699,19 @@ export default function AuditorDashboard() {
 
   // Default audit list view
   return (
-    <div className="min-h-screen bg-yellow-50">
-      <Navigation />
+    <div 
+      className="min-h-screen bg-yellow-50 relative"
+      style={{
+        backgroundImage: 'url(https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      {/* Overlay for better readability */}
+      <div className="absolute inset-0 bg-yellow-50/80"></div>
+      <div className="relative z-10">
+        <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -800,6 +811,7 @@ export default function AuditorDashboard() {
         </Tabs>
 
 
+      </div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { HOTEL_AUDIT_CHECKLIST } from '@shared/auditChecklist';
-import { useAudits, useUpdateAudit, useAuditItems } from '@/hooks/use-api';
+import { useAudits, useUpdateAudit, useAuditItems, useProperties } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { CheckCircle, XCircle, AlertTriangle, Clock, Eye, MessageSquare, Brain, Zap } from 'lucide-react';
@@ -27,6 +27,7 @@ export default function ReviewerDashboard() {
 
   // Fetch audits assigned to this reviewer that are submitted
   const { data: allAudits = [], isLoading } = useAudits({ reviewerId: user?.id });
+  const { data: properties = [] } = useProperties();
   const updateAudit = useUpdateAudit();
   
   // Filter audits that are submitted and awaiting review, or already approved for viewing
@@ -38,6 +39,22 @@ export default function ReviewerDashboard() {
   
   // Fetch audit items for selected audit
   const { data: auditItems = [] } = useAuditItems(selectedAudit?.id);
+
+  // Helper functions to get property and hotel group names
+  const getPropertyName = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
+    return property ? property.name : `Property ${propertyId}`;
+  };
+
+  const getHotelGroupName = (hotelGroupId: number) => {
+    // For now, return a simple mapping since we don't have hotel groups data
+    const hotelGroupMap: { [key: number]: string } = {
+      1: 'Taj Hotels',
+      2: 'Marriott Hotels',
+      3: 'Hilton Hotels'
+    };
+    return hotelGroupMap[hotelGroupId] || `Hotel Group ${hotelGroupId}`;
+  };
 
   // Check if AI analysis is complete for the audit
   const isAIAnalysisComplete = () => {
@@ -414,12 +431,13 @@ export default function ReviewerDashboard() {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             {getPriorityIcon(audit)}
-                            <h4 className="font-semibold text-gray-900">Property ID {audit.propertyId}</h4>
+                            <h4 className="font-semibold text-gray-900">{getPropertyName(audit.propertyId)}</h4>
                           </div>
                           {getStatusBadge(audit.status)}
                         </div>
                         
                         <div className="text-sm text-gray-600 space-y-1">
+                          <p>Hotel Group: {getHotelGroupName(audit.hotelGroupId)}</p>
                           <p>Auditor: {audit.auditorId === 2 ? 'Sarah Johnson' : 'Unknown Auditor'}</p>
                           <p>Submitted: {audit.submittedAt ? new Date(audit.submittedAt).toLocaleDateString() : 'Recently'}</p>
                           {audit.overallScore && (
@@ -440,7 +458,7 @@ export default function ReviewerDashboard() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Review Details - Property ID {selectedAudit.propertyId}</CardTitle>
+                    <CardTitle>Review Details - {getPropertyName(selectedAudit.propertyId)}</CardTitle>
                     {getStatusBadge(selectedAudit.status)}
                   </div>
                 </CardHeader>
