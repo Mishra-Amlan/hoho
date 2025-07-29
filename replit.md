@@ -6,6 +6,19 @@ This is a comprehensive hotel brand audit automation platform that leverages AI 
 
 ## Recent Changes (January 29, 2025)
 
+✓ **MAJOR: Created 5 Comprehensive Survey Results with Varied Performance Levels**
+✓ Added 5 new hotel properties across different regions and hotel groups
+✓ Survey 1: Marriott Executive Apartments, Bangalore - Excellent Performance (92%)
+✓ Survey 2: Hyatt Regency, Chennai - Poor Performance requiring immediate action (65%)
+✓ Survey 3: ITC Grand Central, Mumbai - Good Performance with minor improvements (88%)
+✓ Survey 4: Hilton Garden Inn, Gurgaon - Marginal Performance needing attention (76%)
+✓ Survey 5: Taj Bengal, Kolkata - Outstanding Performance exceeding standards (94%)
+✓ Each survey includes detailed findings, action plans, and individual audit item analysis
+✓ Realistic performance distribution showing different compliance zones (green/amber/red)
+✓ Enhanced database with comprehensive audit data for testing and demonstration
+
+## Previous Changes
+
 ✓ **MAJOR: Enhanced Corporate Dashboard with Regional Performance Analytics**
 ✓ Comprehensive regional performance table with real audit data
 ✓ Export functionality for CSV reports with filtering by region
