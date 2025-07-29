@@ -551,6 +551,10 @@ export default function AdminDashboard() {
                                 field.onChange(value);
                                 const group = hotelGroups.find((g: any) => g.id.toString() === value);
                                 setSelectedHotelGroup(group);
+                                
+                                // Clear the property selection when hotel group changes
+                                form.setValue('propertyId', '');
+                                
                                 // Load default SOP files if available
                                 if (group?.sopFiles) {
                                   try {
@@ -589,26 +593,51 @@ export default function AdminDashboard() {
                       <FormField
                         control={form.control}
                         name="propertyId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Hotel Name</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select hotel property to audit" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {properties.map((property: any) => (
-                                  <SelectItem key={property.id} value={property.id.toString()}>
-                                    {property.name} - {property.location}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          // Filter properties based on selected hotel group
+                          const selectedHotelGroupId = form.watch('hotelGroupId');
+                          const filteredProperties = selectedHotelGroupId 
+                            ? properties.filter((property: any) => 
+                                property.hotelGroupId?.toString() === selectedHotelGroupId
+                              )
+                            : [];
+
+                          return (
+                            <FormItem>
+                              <FormLabel>Hotel Name</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                                disabled={!selectedHotelGroupId}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue 
+                                      placeholder={
+                                        selectedHotelGroupId 
+                                          ? "Select hotel property to audit" 
+                                          : "Please select a hotel group first"
+                                      } 
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {filteredProperties.map((property: any) => (
+                                    <SelectItem key={property.id} value={property.id.toString()}>
+                                      {property.name} - {property.location}
+                                    </SelectItem>
+                                  ))}
+                                  {filteredProperties.length === 0 && selectedHotelGroupId && (
+                                    <SelectItem value="" disabled>
+                                      No properties available for this hotel group
+                                    </SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       {/* 3. SOP */}
