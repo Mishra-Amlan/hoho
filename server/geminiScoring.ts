@@ -170,7 +170,7 @@ async function rateLimitedApiCall<T>(apiCall: () => Promise<T>): Promise<T> {
   return await apiCall();
 }
 
-// Individual audit item analysis
+// Individual audit item analysis with media support
 export async function analyzeIndividualItem(auditItem: AuditItem, checklistDetails?: any): Promise<{ score: number; aiAnalysis: string }> {
   try {
     const systemPrompt = `You are an expert hotel brand audit analyst. Analyze this specific audit checklist item and provide a score (0-5) and detailed analysis.
@@ -183,14 +183,42 @@ SCORING CRITERIA:
 - 1: Poor - Significant problems requiring immediate action
 - 0: Critical Failure - Does not meet minimum standards, major compliance issues
 
-Consider the auditor's comments, any evidence provided, and the specific requirements for this checklist item.`;
+Consider the auditor's comments, any evidence provided (photos, videos, text notes), and the specific requirements for this checklist item. When photos are provided, analyze them for cleanliness, brand compliance, operational standards, and overall quality.`;
+
+    // Parse media evidence if available
+    let mediaContext = 'No evidence provided';
+    let mediaItems: any[] = [];
+    
+    if (auditItem.photos && auditItem.photos !== '[]' && auditItem.photos !== 'null') {
+      try {
+        mediaItems = JSON.parse(auditItem.photos);
+        const photoCount = mediaItems.filter(item => item.type === 'photo').length;
+        const videoCount = mediaItems.filter(item => item.type === 'video').length;
+        const textCount = mediaItems.filter(item => item.type === 'text').length;
+        
+        mediaContext = `Evidence provided: ${photoCount} photos, ${videoCount} videos, ${textCount} text notes`;
+        
+        // Add text content from media items
+        const textContent = mediaItems
+          .filter(item => item.type === 'text' && item.content)
+          .map(item => `Text note: "${item.content}"`)
+          .join('\n');
+        
+        if (textContent) {
+          mediaContext += `\n\nText Evidence:\n${textContent}`;
+        }
+      } catch (e) {
+        console.error('Error parsing media items:', e);
+        mediaContext = 'Evidence provided but could not be parsed';
+      }
+    }
 
     const analysisPrompt = `Analyze this hotel audit checklist item:
 
 Category: ${auditItem.category}
 Item: ${auditItem.item}
 Auditor Comments: ${auditItem.comments || 'No comments provided'}
-Evidence Provided: ${auditItem.photos ? 'Yes (photos attached)' : 'No evidence provided'}
+${mediaContext}
 Current Status: ${auditItem.status || 'Not completed'}
 
 ${checklistDetails ? `
@@ -203,7 +231,7 @@ Checklist Details:
 Please provide a JSON response with:
 {
   "score": number (0-5),
-  "aiAnalysis": "Detailed analysis explaining the score with specific observations and recommendations"
+  "aiAnalysis": "Detailed analysis explaining the score based on auditor comments and evidence provided. Include specific observations about photos/videos if available and provide actionable recommendations."
 }`;
 
     const response = await rateLimitedApiCall(() => 

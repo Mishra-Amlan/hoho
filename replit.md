@@ -4,7 +4,14 @@
 
 This is a comprehensive hotel brand audit automation platform that leverages AI technology to analyze diverse inputs such as photos, videos, and text-based checklists. The system supports multiple stakeholder personas including Admin (Vendor), Guest Auditor, Final Reviewer (QA), QA Corporate Team, and Hotel GM/Franchise Owner. The platform aims to automate hotel brand audits with 85%+ accuracy, handle up to 500 audits per day, and provide rapid actionable insights through detailed reporting.
 
-## Recent Changes (January 24, 2025)
+## Recent Changes (January 29, 2025)
+
+✓ **MAJOR: Enhanced Media Visibility and AI Analysis** 
+✓ Created reusable MediaDisplay component for consistent media viewing across all roles
+✓ Enhanced AI analysis to process both media and text descriptions for scoring  
+✓ Improved media display in Admin, Reviewer, and Auditor dashboards with zoom functionality
+✓ Added compact media view options for better space utilization
+✓ Updated Gemini AI integration to analyze media content for more accurate scoring
 
 ✓ **PROJECT MIGRATION COMPLETED: Successfully migrated hotel audit platform to standard Replit environment**
 ✓ **Database Migration**: PostgreSQL database configured with proper environment variables

@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HOTEL_AUDIT_CHECKLIST, ChecklistItem } from '@shared/auditChecklist';
+import MediaDisplay from '@/components/MediaDisplay';
 import { useAudits, useUpdateAudit, useProperties, useAuditItems } from '@/hooks/use-api';
 import { useToast } from '@/hooks/use-toast';
 import { Save, Send, Camera, Video, MessageSquare, Clock, CheckCircle, Calendar, Building } from 'lucide-react';
