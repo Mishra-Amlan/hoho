@@ -151,7 +151,7 @@ export default function ReviewerDashboard() {
       // Sync scores to ensure all dashboards show updated values
       if (selectedAudit?.id) {
         try {
-          await fetch(`/api/audits/${selectedAudit.id}/sync-scores`, {
+          const syncResponse = await fetch(`/api/audits/${selectedAudit.id}/sync-scores`, {
             method: 'POST',
           });
         } catch (error) {

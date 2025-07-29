@@ -241,12 +241,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Updating audit:', id, 'with data:', updateData);
       
-      // If we're updating the audit without scores, calculate them from audit items
-      if (!updateData.overallScore && (updateData.status === 'approved' || updateData.status === 'completed')) {
+      // Always calculate scores from audit items when status changes to approved or completed
+      if (updateData.status === 'approved' || updateData.status === 'completed') {
         const auditItems = await storage.getAuditItems(id);
         const calculatedScores = calculateAuditScores(auditItems);
-        Object.assign(updateData, calculatedScores);
-        console.log('Calculated scores for audit:', id, calculatedScores);
+        
+        // Use calculated scores, but allow manual overrides from updateData
+        updateData.overallScore = updateData.overallScore || calculatedScores.overallScore;
+        updateData.cleanlinessScore = updateData.cleanlinessScore || calculatedScores.cleanlinessScore;
+        updateData.brandingScore = updateData.brandingScore || calculatedScores.brandingScore;
+        updateData.operationalScore = updateData.operationalScore || calculatedScores.operationalScore;
+        updateData.complianceZone = updateData.complianceZone || calculatedScores.complianceZone;
+        updateData.findings = updateData.findings || calculatedScores.findings;
+        updateData.actionPlan = updateData.actionPlan || calculatedScores.actionPlan;
+        
+        console.log('Applied calculated scores for audit:', id, {
+          overallScore: updateData.overallScore,
+          cleanlinessScore: updateData.cleanlinessScore,
+          brandingScore: updateData.brandingScore,
+          operationalScore: updateData.operationalScore,
+          complianceZone: updateData.complianceZone
+        });
       }
       
       const audit = await storage.updateAudit(id, updateData);

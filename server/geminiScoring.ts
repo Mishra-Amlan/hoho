@@ -53,7 +53,7 @@ export async function generateCorrectiveActionPlan(
   try {
     const auditContext = {
       propertyName,
-      auditDate: audit.submittedAt || audit.createdAt,
+      auditDate: audit.submittedAt || audit.createdAt || new Date(),
       overallScore: audit.overallScore,
       cleanlinessScore: audit.cleanlinessScore,
       brandingScore: audit.brandingScore,
@@ -90,7 +90,7 @@ Provide actionable, specific recommendations that a franchisee owner can impleme
     const planPrompt = `Generate a comprehensive Corrective Action Plan for this hotel audit:
 
 Property: ${auditContext.propertyName}
-Audit Date: ${new Date(auditContext.auditDate).toLocaleDateString()}
+Audit Date: ${new Date(auditContext.auditDate || new Date()).toLocaleDateString()}
 Overall Score: ${auditContext.overallScore}%
 Compliance Zone: ${auditContext.complianceZone}
 
@@ -112,7 +112,7 @@ ${items.map((item: any) =>
 Please provide a detailed JSON response with the following structure:
 {
   "propertyName": "${auditContext.propertyName}",
-  "auditDate": "${new Date(auditContext.auditDate).toLocaleDateString()}",
+  "auditDate": "${new Date(auditContext.auditDate || new Date()).toLocaleDateString()}",
   "overallScore": ${auditContext.overallScore},
   "complianceZone": "${auditContext.complianceZone}",
   "criticalIssues": ["List of critical issues requiring immediate attention"],
@@ -150,16 +150,18 @@ Please provide a detailed JSON response with the following structure:
   ]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+    const model = ai.getModel("gemini-2.5-pro");
+    const response = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [{ text: systemPrompt + "\n\n" + planPrompt }]
+      }],
       config: {
-        systemInstruction: systemPrompt,
         responseMimeType: "application/json"
-      },
-      prompt: planPrompt
+      }
     });
 
-    const result = JSON.parse(response.response.text());
+    const result = JSON.parse(response.text());
     return result as CorrectiveActionPlan;
 
   } catch (error) {
@@ -175,7 +177,7 @@ function generateFallbackActionPlan(audit: Audit, auditItems: AuditItem[], prope
   
   return {
     propertyName,
-    auditDate: new Date(audit.submittedAt || audit.createdAt).toLocaleDateString(),
+    auditDate: new Date(audit.submittedAt || audit.createdAt || new Date()).toLocaleDateString(),
     overallScore: audit.overallScore || 0,
     complianceZone: audit.complianceZone || 'red',
     criticalIssues: lowScoreItems.slice(0, 3).map(item => `${item.category}: ${item.item}`),
@@ -275,29 +277,18 @@ Please provide a JSON response with the following structure:
   "actionPlan": "Comprehensive action plan with prioritized recommendations"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+    const model = ai.getModel("gemini-2.5-pro");
+    const response = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [{ text: systemPrompt + "\n\n" + analysisPrompt }]
+      }],
       config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            overallScore: { type: "number" },
-            cleanlinessScore: { type: "number" },
-            brandingScore: { type: "number" },
-            operationalScore: { type: "number" },
-            complianceZone: { type: "string", enum: ["green", "amber", "red"] },
-            findings: { type: "string" },
-            actionPlan: { type: "string" }
-          },
-          required: ["overallScore", "cleanlinessScore", "brandingScore", "operationalScore", "complianceZone", "findings", "actionPlan"]
-        }
-      },
-      contents: analysisPrompt
+        responseMimeType: "application/json"
+      }
     });
 
-    const rawJson = response.text;
+    const rawJson = response.text();
     console.log('AI Analysis Response:', rawJson);
 
     if (rawJson) {
@@ -415,6 +406,8 @@ export async function generateAuditInsights(audit: Audit, auditItems: AuditItem[
     };
   }
 }
+
+
 
 export async function analyzeIndividualItem(auditItem: AuditItem, checklistDetails?: any): Promise<{ score: number; aiAnalysis: string }> {
   try {
