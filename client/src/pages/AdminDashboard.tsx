@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                                     </SelectItem>
                                   ))}
                                   {filteredProperties.length === 0 && selectedHotelGroupId && (
-                                    <SelectItem value="" disabled>
+                                    <SelectItem value="no-properties" disabled>
                                       No properties available for this hotel group
                                     </SelectItem>
                                   )}
